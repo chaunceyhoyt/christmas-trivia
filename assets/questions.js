@@ -389,6 +389,11 @@ window.ROUNDS = [
  prompts:4,pickSec:75,voteSec:25,perVote:100,best:200,emoji:"🎁😂🎄📱",
  rule:"Search for a Christmas GIF on your phone and add a caption if you like. Then vote for the funniest one. 100 points per vote, +200 for Best in Show.",qs:[]},
 
+/* ---------- Fa-La-La Lies: write a fake answer, then find the real one among everyone's fibs. ---------- */
+{id:"fibs",kind:"fib",title:"Fa-La-La Lies",sub:"Write a fake answer that fools your friends. Then find the truth.",
+ prompts:4,writeSec:60,voteSec:25,truth:300,fooled:150,emoji:"🤥🎄🤫🎁",
+ rule:"Type a believable FAKE answer on your phone. Then pick the real one. Find the truth: +300. Fool someone with your fib: +150 each.",qs:[]},
+
 /* ---------- Speed round ---------- */
 {id:"blitzen",kind:"feature",title:"Blitzen’s Lightning Round",sub:"Five seconds. No thinking. Just tap.",timer:5,speed:true,
  rule:"Only 5 seconds per question! Fast answers score big.",tough:"11111111111111",qs:[
@@ -582,4 +587,36 @@ window.GIF_PROMPTS = [
 {t:"You watching the Christmas tree start to tip over.",kid:1},
 {t:"Grandpa when the thermostat gets touched."},
 {t:"When the ugly sweater contest is announced.",kid:1}
+];
+
+/* Facts for Fa-La-La Lies: q (with ____), a (the truth), h (backup fakes "from Grandma" if too few people play). */
+window.FIB_PROMPTS = [
+{q:"In Elf, Buddy’s dad works for a children’s book publisher called ____.",a:"Greenway Press",h:["Hobbs & Sons","Big Apple Books","Maple Tree Press"]},
+{q:"In Home Alone, Buzz’s pet tarantula is named ____.",a:"Axl",h:["Fang","Spike","Mr. Legs"]},
+{q:"In Christmas Vacation, Clark’s stingy boss is Frank ____.",a:"Shirley",h:["Hanson","Dobbs","Kramer"]},
+{q:"At dinner in A Christmas Story, Randy eats like a ____.",a:"piggy",h:["dinosaur","puppy","monkey"]},
+{q:"The gangster movie Kevin watches in Home Alone is called Angels with ____ Souls.",a:"Filthy",h:["Dirty","Broken","Lost"]},
+{q:"In Die Hard, Hans Gruber’s crew is after $640 million in ____.",a:"bearer bonds",h:["gold bars","diamonds","bitcoin"]},
+{q:"In It’s a Wonderful Life, Clarence is an Angel, ____ Class.",a:"Second",h:["Third","Junior","Probationary"]},
+{q:"On the Grinch’s schedule in the 2000 movie, 7:00 is “Wrestle with my ____.”",a:"self-loathing",h:["dog","conscience","laundry"]},
+{q:"In Home Alone 2, the toy store is owned by Mr. ____.",a:"Duncan",h:["Wilkins","Barnaby","Kringle"]},
+{q:"In Christmas Vacation, Cousin Eddie’s dog is named ____.",a:"Snots",h:["Bubba","Rusty","Chewie"]},
+{q:"In Love Actually, Colin flies to ____ because he thinks American girls will love his accent.",a:"Wisconsin",h:["Texas","Las Vegas","Ohio"]},
+{q:"In Die Hard, John McClane’s wife uses her maiden name: Holly ____.",a:"Gennero",h:["Nakatomi","Powell","Bennett"]},
+{q:"In Home Alone, Buzz says Old Man Marley killed his family with a ____.",a:"snow shovel",h:["candy cane","pickaxe","hockey stick"]},
+{q:"In Elf, Buddy’s dad Walter Hobbs is played by James ____.",a:"Caan",h:["Brolin","Woods","Spader"]},
+{q:"In Gremlins, Billy’s dad sells a gadget he invented called the ____.",a:"Bathroom Buddy",h:["Kitchen Wizard","Shower Pal","Peltzer Pot"]},
+{q:"In Jingle All the Way, Howard Langston sells ____ for a living.",a:"mattresses",h:["used cars","insurance","vacuum cleaners"]},
+{q:"In The Nightmare Before Christmas, Jack’s ghost dog Zero has a glowing ____ for a nose.",a:"jack-o’-lantern",h:["candle","candy corn","light bulb"]},
+{q:"In A Christmas Story, Ralphie’s secret decoder ring message says “Be sure to drink your ____.”",a:"Ovaltine",h:["milk","eggnog","Tang"]},
+{q:"In The Santa Clause, Scott Calvin’s ex-wife marries Neal, who is a ____.",a:"psychiatrist",h:["dentist","magician","mall cop"]},
+{q:"In Scrooged, Frank Cross wants tiny ____ stapled onto mice for his Christmas special.",a:"antlers",h:["Santa hats","jingle bells","bow ties"]},
+{q:"Rudolph’s girlfriend is a doe named ____.",a:"Clarice",h:["Vixen","Holly","Daisy"],kid:1},
+{q:"Frosty the Snowman comes to life when the kids put on his magic ____.",a:"hat",h:["scarf","mittens","carrot"],kid:1},
+{q:"The Grinch’s dog is named ____.",a:"Max",h:["Buster","Rex","Sparky"],kid:1},
+{q:"In Rudolph, Hermey the elf wants to be a ____.",a:"dentist",h:["pilot","chef","astronaut"],kid:1},
+{q:"In Frozen, Olaf the snowman loves warm ____.",a:"hugs",h:["soup","baths","cocoa"],kid:1},
+{q:"In The Polar Express, Santa gives the boy the first gift of Christmas: a ____.",a:"sleigh bell",h:["golden ticket","snow globe","toy train"],kid:1},
+{q:"In Elf, Buddy puts ____ on his spaghetti.",a:"maple syrup",h:["chocolate chips","ketchup","peanut butter"],kid:1},
+{q:"Santa’s reindeer Dasher, Dancer, Prancer, Vixen, Comet, Cupid, Donner and ____.",a:"Blitzen",h:["Blixen","Thunder","Sparkle"],kid:1}
 ];

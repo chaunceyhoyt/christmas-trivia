@@ -719,3 +719,18 @@ h1, h2 { text-wrap: balance; }
 .gif-vc .yours { position: absolute; right: 8px; top: 8px; background: var(--ink); color: #fff; font-weight: 900; font-size: .7rem; padding: 2px 8px; border-radius: 999px; }
 .gif-vc.on { box-shadow: 0 0 0 4px var(--gold), 0 4px 0 rgba(0, 0, 0, .3); }
 .gif-vc:disabled { opacity: .5; }
+
+/* ---------- Fa-La-La Lies ---------- */
+.blank { display: inline-block; min-width: 4em; border-bottom: .12em solid #e0a020; color: transparent; line-height: 1; }
+.prompt .blank { border-bottom-color: var(--cran); }
+.fib .prompt { font-size: clamp(1.8rem, 3.8vw, 4.4rem); max-width: 26ch; }
+.fib-board { height: 100%; display: grid; grid-template-rows: auto minmax(0, 1fr); gap: 2vh; }
+.fib-board .prompt-small { font-size: clamp(1.2rem, 2.2vw, 2.6rem); }
+.fib-list { grid-template-columns: repeat(var(--cols), minmax(0, 1fr)); align-content: start; }
+.fib-opt { animation: pop .45s both; }
+.fib-opt .landed { align-items: center; }
+.fib-opt .truth { background: var(--gold); color: var(--ink); font-weight: 900; padding: .15em .7em; border-radius: 999px; font-size: clamp(.8rem, 1.1vw, 1.25rem); }
+.fib-opt .fibber { background: var(--cream); color: var(--ink); font-weight: 800; padding: .15em .7em; border-radius: 999px; font-size: clamp(.75rem, 1vw, 1.15rem); display: inline-flex; align-items: center; gap: .3em; }
+.fib-opt .fibber .orn { --o: 1.3em; }
+.fib-opt.wrong { opacity: .75; filter: none; }
+.p-q u { text-decoration: none; border-bottom: 3px solid var(--cran); color: transparent; }

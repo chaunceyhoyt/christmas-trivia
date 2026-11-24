@@ -49,6 +49,7 @@ If the TV laptop reloads, the game picks up where it left off. **New game** at t
 
 - **Draw the Halls:** everyone picks one of three Christmas movies on their phone and draws it. The TV replays each drawing and everyone guesses. Artists get 100 for each correct guess. Ends with Grandma’s Fridge.
 - **GIF Wrapped:** everyone answers a funny prompt with a Christmas GIF (plus an optional caption), then votes for the funniest. 100 points per vote, +200 for Best in Show. Searches are locked to Christmas GIFs and rated PG (G in kid mode).
+- **Fa-La-La Lies:** an obscure Christmas movie fact appears with a blank. Everyone types a believable fake answer, then everyone tries to pick the real one. Find the truth: +300. Every person your fib fools: +150.
 - **Finale ceremony:** silly awards for the night, then the podium. Start it from the host controller after your last round.
 
 ### Turn on GIF Wrapped (one time, about 5 minutes)

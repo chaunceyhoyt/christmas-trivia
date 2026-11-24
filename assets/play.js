@@ -155,7 +155,7 @@
   function put(sel, html) { if (last[sel] === html) return; last[sel] = html; $(sel).innerHTML = html; }
   function render() {
     const activeEl = document.activeElement;
-    const viewKey = S ? S.phase + ":" + S.epoch + ":" + (S.gif ? S.gif.pi : "") : "";
+    const viewKey = S ? S.phase + ":" + S.epoch + ":" + (S.gif ? S.gif.pi : "") + (S.fib ? S.fib.pi : "") : "";
     if (activeEl && activeEl.matches("input:not([type=file])") && viewKey === lastViewKey) return; // don't wipe what someone is typing
     lastViewKey = viewKey;
     if (cropping) return;
@@ -179,6 +179,9 @@
         case "drawpick": html = vDrawPick(); break;
         case "finale": html = vFinale(); break;
         case "gifpick": html = vGifPick(); break;
+        case "fibwrite": html = vFibWrite(); break;
+        case "fibvote": html = vFibVote(); break;
+        case "fibresult": html = vFibResult(); break;
         case "gifvote": html = vGifVote(); break;
         case "gifresult": html = vGifResult(); break;
         case "drawing": html = vDrawing(); break;
@@ -197,7 +200,7 @@
     put("#overlay", over);
     put("#foot", `<span>${online ? "● Online" : "○ Connecting"}</span>${code ? `<span>Game ${esc(code)}</span>` : ""}
       ${me.name && !editing ? `<button data-act="rename">Change name or face</button>` : ""}${code ? `<button data-act="code">Different game</button>` : ""}`);
-    timers(); attachPad(); attachGif();
+    timers(); attachPad(); attachGif(); fibStatus();
     const f = $("#nameIn") || $("#codeIn");
     if (f && !f.value) f.focus();
   }
@@ -207,7 +210,7 @@
     if (!S) return;
     const el = $("#pTimer"), cane = $("#pCane"), rb = $("#readyBar");
     const since = Date.now() - gotAt;
-    if (["question", "drawing", "gifpick", "gifvote"].includes(S.phase) && S.tLeft) {
+    if (["question", "drawing", "gifpick", "gifvote", "fibwrite", "fibvote"].includes(S.phase) && S.tLeft) {
       const left = S.paused ? S.tLeft : Math.max(0, S.tLeft - since);
       if (el) el.textContent = Math.ceil(left / 1000);
       if (cane && !cane.dataset.e) {
@@ -297,6 +300,44 @@
     if (!x) return vWait("The votes are in!", "Look at the TV to see who won.");
     return `<div class="card welcome">${x.best ? `<div class="trophy">🏆</div><p class="label">BEST IN SHOW!</p>` : `<div class="trophy">🎁</div>`}
       <h1>${x.votes} vote${x.votes === 1 ? "" : "s"}</h1><p><b>+${x.d}</b> points</p></div>`;
+  }
+
+  /* ---------- Fa-La-La Lies ---------- */
+  const blank = q => esc(q).replace("____", "<u>______</u>");
+  function vFibWrite() {
+    const f = S.fib;
+    return `<div class="card"><p class="p-item"><span>Fa-La-La Lies</span><span>${f.pi + 1} of ${f.n}</span></p><p class="p-q">${blank(f.q)}</p></div>
+      <div class="p-clock"><b id="pTimer"></b><div class="cane"><i id="pCane"></i></div></div>
+      <form class="card" id="fibForm"><div class="field"><label for="fibIn">Your fake answer</label><input id="fibIn" maxlength="40" autocomplete="off" autocorrect="off" placeholder="Make it believable…" required></div>
+        <p></p><button class="btn red big-btn" type="submit">Send my fib 🤫</button><p class="p-status" id="fibStatus"></p></form>`;
+  }
+  /* Status line under the fib box, updated without re-rendering so typing isn't interrupted. */
+  function fibStatus() {
+    const el = $("#fibStatus"); if (!el || !S || !S.fib) return;
+    const t = S.fib.oops.includes(me.pid) ? "😳 That’s the REAL answer! Write a fake one." : S.fib.done.includes(me.pid) ? "Fib received ✓ You can send a new one to change it." : "";
+    if (el.textContent !== t) el.textContent = t;
+  }
+  let fibPick = {};
+  function vFibVote() {
+    const f = S.fib, mine = fibPick[f.seq + ":" + f.pi];
+    return `<div class="card"><p class="p-item"><span>Fa-La-La Lies · find the truth</span><span>${f.pi + 1} of ${f.n}</span></p><p class="p-q">${blank(f.q)}</p></div>
+      <div class="p-clock"><b id="pTimer"></b><div class="cane"><i id="pCane"></i></div></div>
+      <div class="p-choices">${(f.opts || []).map((o, i) => {
+        const own = o.authors.includes(me.pid);
+        return `<button class="p-ch c${i % 4}${mine === i ? " picked" : ""}" data-fv="${i}"${own ? " disabled" : ""}><span class="letter">${i + 1}</span><span>${esc(o.t)}${own ? " <small>(your fib)</small>" : ""}</span></button>`;
+      }).join("")}</div>
+      <p class="p-status">${mine != null ? "Locked in ✓ Tap another to change it" : "Which one is TRUE?"}</p>`;
+  }
+  function vFibResult() {
+    const f = S.fib, x = (f.res || {})[me.pid] || { d: 0, truth: false, fooled: 0, fell: -1 };
+    const real = (f.opts || []).find(o => o.real), fell = x.fell >= 0 ? f.opts[x.fell] : null;
+    const names = ids => ids.map(id => (S.players.find(p => p.id === id) || {}).name).filter(Boolean).join(" & ");
+    const lines = [];
+    if (x.truth) lines.push("You found the truth! <b>+300</b>");
+    else if (fell) lines.push(fell.house ? "You fell for Grandma’s fib! 👵" : `You fell for ${esc(names(fell.authors))}’s fib!`);
+    if (x.fooled) lines.push(`Your fib fooled ${x.fooled} ${x.fooled === 1 ? "person" : "people"}! <b>+${x.d - (x.truth ? 300 : 0)}</b>`);
+    return `<div class="card result ${x.d > 0 ? "ok" : "bad"}"><div class="mark">${x.fooled ? "🤥" : x.truth ? "✓" : "✗"}</div><div class="delta">${x.d > 0 ? "+" : ""}${x.d}</div>
+      <ul class="breakdown">${lines.map(l => `<li>${l}</li>`).join("")}</ul><p>The truth: <b>${esc(real ? real.t : "")}</b></p></div>`;
   }
 
   /* ---------- Finale ceremony ---------- */
@@ -425,6 +466,12 @@
       if (v.length !== 4) return;
       code = v; history.replaceState(null, "", "?g=" + code);
       $("#codeIn").blur(); connect(); render();
+    } else if (e.target.id === "fibForm") {
+      const v = $("#fibIn").value.trim().slice(0, 40);
+      if (!v || !S || S.phase !== "fibwrite") return;
+      ch.send("fibsub", { pid: me.pid, seq: S.fib.seq, pi: S.fib.pi, t: v }); buzz([30]);
+      const st = $("#fibStatus"); if (st) st.textContent = "Sending…";
+      $("#fibIn").blur();
     } else if (e.target.id === "nameForm") {
       const v = $("#nameIn").value.trim().slice(0, 24);
       if (!v) return;
@@ -448,6 +495,8 @@
     if (gq && S && S.phase === "gifpick") { const q = $("#gifQ"); if (q) q.value = gq.dataset.gq; searchGif(gq.dataset.gq); return; }
     const gv = e.target.closest("[data-gv]");
     if (gv && S && S.phase === "gifvote" && !gv.disabled) { myVote = gv.dataset.gv; ch.send("gifvote", { pid: me.pid, seq: S.gif.seq, pi: S.gif.pi, for: myVote }); buzz([30]); last["#view"] = null; S.gif.voted.push(me.pid); render(); return; }
+    const fv = e.target.closest("[data-fv]");
+    if (fv && S && S.phase === "fibvote" && !fv.disabled) { const i = +fv.dataset.fv; fibPick[S.fib.seq + ":" + S.fib.pi] = i; ch.send("fibvote", { pid: me.pid, seq: S.fib.seq, pi: S.fib.pi, i }); buzz([30]); render(); return; }
     const dp = e.target.closest("[data-dpick]");
     if (dp && S && S.phase === "drawpick") { const i = +dp.dataset.dpick; S.draw.picks[me.pid] = i; ch.send("drawpick", { pid: me.pid, seq: S.draw.seq, i }); buzz([30]); last["#view"] = null; render(); return; }
     const col = e.target.closest("[data-col]"), size = e.target.closest("[data-size]");
