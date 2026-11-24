@@ -174,6 +174,7 @@
         case "lobby": html = `<div class="card welcome">${myOrn("huge")}<h1>You’re in, ${esc(me.name)}!</h1><p>Look for your ornament on the big screen. The game starts soon.</p></div><p class="p-status">${S.players.length} on the nice list</p>`; break;
         case "menu": html = scoreCard() + vWait(S.hold ? "Intermission ☕" : S.next && S.next[0] ? "Up next: " + S.next[0] : "Between rounds", waits[Math.floor(gotAt / 30000) % waits.length]); break;
         case "drawpick": html = vDrawPick(); break;
+        case "finale": html = vFinale(); break;
         case "drawing": html = vDrawing(); break;
         case "intro": html = vIntro(); break;
         case "alarm": html = vWait(r.title, r.rule); over = vAlarm(); break;
@@ -220,6 +221,19 @@
     timers();
     if (S && S.phase === "alarm" && Date.now() - alarmSeenAt < 2600 && Date.now() - alarmSeenAt > 2200) render();
   }, 250);
+
+  /* ---------- Finale ceremony ---------- */
+  let finaleBuzz = "";
+  function vFinale() {
+    const f = S.finale || {}, k = f.k || "intro", place = rank(), mine = (f.mine || []).find(a => a.pid === me.pid);
+    if (k !== finaleBuzz) { finaleBuzz = k; if (f.award && f.award.pid === me.pid) buzz([100, 60, 100, 60, 300]); if (k === "p" + place) buzz([200, 100, 200, 100, 600]); }
+    if (f.award && f.award.pid === me.pid) return `<div class="card welcome award-card"><div class="trophy">${f.award.e}</div><p class="label">THAT’S YOU!</p><h1>${esc(f.award.title)}</h1><p>${esc(f.award.line)}</p>${myOrn("big")}</div>`;
+    const medal = ["", "🥇", "🥈", "🥉"][place] || "🎄";
+    const revealed = { p3: 3, p2: 2, p1: 1, end: 1 }[k];
+    if (revealed && place && place >= revealed && place <= 3) return `<div class="card welcome award-card"><div class="trophy">${medal}</div><p class="label">YOU FINISHED</p><h1>${place === 1 ? "First place! 👑" : place === 2 ? "Second place!" : "Third place!"}</h1>${myOrn("huge")}</div>`;
+    if (k === "end") return `<div class="card welcome">${myOrn("big")}<p class="label">FINAL STANDINGS</p><h1>You finished #${place} of ${S.players.length}</h1>${mine ? `<p>${mine.e} You won <b>${esc(mine.title)}</b>!</p>` : ""}<p>Merry Christmas!</p></div>` + vScores();
+    return `<div class="card welcome"><div class="trophy">🥁</div><h1>The grand finale!</h1><p>Watch the TV. You might be getting an award…</p></div>`;
+  }
 
   /* ---------- Draw the Halls ---------- */
   const myOpts = () => (S.draw && S.draw.opts && S.draw.opts[me.pid]) || null;

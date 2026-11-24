@@ -641,3 +641,35 @@ h1, h2 { text-wrap: balance; }
 .intro.drawing { gap: 1.2vh; }
 .intro.drawing h1 { font-size: clamp(2.4rem, 5.5vw, 6rem); }
 .intro.drawing .crayons { font-size: clamp(2rem, 3.6vw, 4rem); }
+
+/* ---------- Finale ceremony ---------- */
+.finale h1 { max-width: 20ch; }
+.drum { font-size: clamp(4rem, 9vw, 10rem); animation: jiggle .12s linear infinite alternate; }
+.trophy { font-size: clamp(4rem, 8vw, 9rem); line-height: 1; animation: pop .6s cubic-bezier(.3, 1.6, .5, 1) both; filter: drop-shadow(0 0 30px rgba(255, 214, 90, .7)); }
+.finale.award h1 { color: #ffe19a; font-size: clamp(2.4rem, 6vw, 7rem); }
+.winner { display: flex; align-items: center; gap: 1.5vw; animation: pop .6s .5s both; }
+.winner .orn { --o: clamp(5rem, 9vw, 10rem); }
+.winner b { font-family: var(--display); font-weight: 400; font-size: clamp(2rem, 4.4vw, 5rem); text-shadow: 3px 3px 0 var(--cran2); }
+.finale.award .rule { animation: pop .5s 1s both; }
+.podium-wrap { height: 100%; display: grid; grid-template-rows: auto 1fr; justify-items: center; position: relative; gap: 1vh; }
+.podium-wrap > h1 { position: relative; z-index: 1; font-family: var(--display); font-weight: 400; margin: 0; font-size: clamp(2.2rem, 4.6vw, 5.4rem); text-shadow: 4px 4px 0 var(--cran2), 8px 8px 0 rgba(0, 0, 0, .3); text-align: center; }
+.podium { position: relative; z-index: 1; display: grid; grid-template-columns: repeat(3, minmax(0, 15vw)); gap: 1vw; align-items: end; }
+.podium .step { display: grid; justify-items: center; align-content: end; gap: 1vh; }
+.podium .who { display: grid; justify-items: center; gap: .4vh; text-align: center; animation: drop .8s cubic-bezier(.3, 1.6, .5, 1) both; position: relative; }
+.podium .who .orn { --o: clamp(4.5rem, 8vw, 9rem); }
+.podium .who b { font-family: var(--display); font-weight: 400; font-size: clamp(1.2rem, 2.2vw, 2.6rem); line-height: 1; }
+.podium .who span:last-child { font-weight: 900; color: #ffe19a; }
+.podium .mystery { font-family: var(--display); font-size: clamp(4rem, 8vw, 9rem); color: rgba(255, 246, 228, .35); animation: none; }
+.crown { position: absolute; top: -.9em; font-size: clamp(2.4rem, 4vw, 4.6rem); z-index: 2; animation: jiggle .6s ease-in-out infinite alternate; }
+.podium .block { width: 100%; display: grid; place-items: center; font-family: var(--display); font-size: clamp(2.6rem, 5vw, 6rem); color: var(--ink); border-radius: 10px 10px 0 0; box-shadow: inset 0 6px 0 rgba(255, 255, 255, .4), 0 10px 20px rgba(0, 0, 0, .4); }
+.block.gold { height: 26vh; background: linear-gradient(#ffe9a8, var(--gold)); }
+.block.silver { height: 18vh; background: linear-gradient(#f4f4f4, #b9c0c8); }
+.block.bronze { height: 12vh; background: linear-gradient(#f3c7a0, #b8763d); }
+.podium-wrap.end { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto 1fr; align-items: center; column-gap: 3vw; }
+.podium-wrap.end > h1 { grid-column: 1 / -1; }
+.podium-wrap.end .podium { grid-template-columns: repeat(3, minmax(0, 11vw)); }
+.podium-wrap.end .block.gold { height: 20vh; } .podium-wrap.end .block.silver { height: 14vh; } .podium-wrap.end .block.bronze { height: 9vh; }
+.podium-wrap.end .podium .who .orn { --o: clamp(3rem, 5vw, 5.5rem); }
+.podium-wrap.end .race { position: relative; z-index: 1; width: 100%; }
+.podium-wrap .rain { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 0; }
+.award-card .trophy { font-size: 4.5rem; }

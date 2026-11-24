@@ -7,7 +7,7 @@
   /* How long the autopilot holds each screen (ms). */
   const HOLD = { intro: 8000, alarm: 11000, land: 3200, reveal: 8000, note: 2500, roundend: 14000, silly: 16000, drawpick: 25000 };
   /* Phases that always move on by themselves when their clock runs out, even with the autopilot off. */
-  const TIMED = ["ready", "question", "drawpick", "drawing"];
+  const TIMED = ["ready", "question", "drawpick", "drawing", "finale"];
   const QPHASES = ["ready", "question", "locked", "reveal"];
 
   /* ---------- state ---------- */
@@ -17,7 +17,7 @@
       rid: null, order: [], qi: 0, phase: "lobby", choices: [], correct: -1, ans: {}, res: null, scored: {},
       tEnd: 0, tLimit: 20, qOpenAt: 0, readMs: 0, stepAt: 0, epoch: 0, golden: -1, silly: "",
       showScores: false, roundStart: {}, alarmAt: 0, queue: [], auto: true, surprise: false, kid: false,
-      paused: false, pausedAt: 0, lastKind: "", hold: false, breakSec: 20, drawings: {}, drawSeq: 0 };
+      paused: false, pausedAt: 0, lastKind: "", hold: false, breakSec: 20, drawings: {}, drawSeq: 0, stats: {}, finale: null };
   }
   let G = null, photos = {};
   try { G = JSON.parse(localStorage.getItem(KEY) || "null"); } catch (e) {}
@@ -149,6 +149,7 @@
       case "lock": if (G.phase === "question") lock(); break;
       case "skip": if (QPHASES.includes(G.phase)) advanceQ(); break;
       case "pause": setPaused(true); break;
+      case "finale": startFinale(); break;
       case "resume": setPaused(false); break;
       case "addTime": if (G.phase === "question" && G.tEnd) { G.tEnd += 10000; G.stepAt = G.tEnd; G.tLimit += 10; } break;
       case "auto": G.auto = !!m.on; if (G.auto && G.stepAt && G.stepAt < Date.now() + 2500) G.stepAt = Date.now() + 3000; break;
@@ -190,6 +191,7 @@
       players: sorted().map(p => ({ id: p.id, name: p.name, score: p.score, av: p.av, ph: p.ph || "", streak: p.streak || 0 })),
       reveal: G.phase === "reveal" ? { correct: G.correct, note: q[3] || "", res: G.res, counts } : null,
       silly: G.phase === "silly" ? G.silly : "",
+      finale: G.phase === "finale" && G.finale ? { k: G.finale.k, award: (G.finale.k || "").startsWith("award") ? G.finale.awards[+G.finale.k.slice(5)] : null, mine: (G.finale.awards || []).map(a => ({ pid: a.pid, title: a.title, e: a.e })) } : null,
       kicked: G.kicked.slice(-60), hold: G.hold, breakSec: G.breakSec,
       draw: r && r.kind === "draw" ? { seq: G.drawSeq, sec: drawSecs(r), artist: artistNow(),
         opts: G.phase === "drawpick" || G.phase === "drawing" ? Object.fromEntries(Object.entries(G.drawings).map(([k, d]) => [k, d.opts])) : null,
@@ -351,6 +353,7 @@
     }
     const deltas = {};
     Object.entries(res).forEach(([pid, x]) => { if (r.kind === "kid") x.d = Math.max(0, x.d); G.players[pid].score += x.d; deltas[pid] = x.d; });
+    if (!prev) tally(res, artist);
     G.scored[key] = { d: deltas, s: oldStreak }; G.res = res; G.phase = "reveal"; G.tEnd = 0;
     G.stepAt = Date.now() + HOLD.reveal + (q[3] ? HOLD.note : 0);
     SFX.play("correct");
@@ -370,6 +373,7 @@
       case "intro": case "alarm": case "silly": openReady(); break;
       case "drawpick": startDrawing(); break;
       case "drawing": startGuessing(); break;
+      case "finale": finaleNext(); break;
       case "ready": openQuestion(); break;
       case "question": lock(); break;
       case "locked": reveal(); break;
@@ -389,11 +393,68 @@
     else if (G.phase === "intro" || G.phase === "alarm" || G.phase === "drawpick") toMenu();
     else if (G.phase === "drawing") { G.phase = "drawpick"; G.tEnd = 0; G.stepAt = Date.now() + HOLD.drawpick; }
   }
+  /* Running totals for the finale awards. */
+  const st = pid => (G.stats[pid] = G.stats[pid] || { a: 0, ok: 0, wr: 0, bl: 0, t: 0, best: 0, gold: 0, fans: 0, lost: 0, quick: 0, round: 0 });
+  function tally(res, artist) {
+    const fastest = Object.keys(res).filter(id => res[id].ok).sort((a, b) => G.ans[a].t - G.ans[b].t)[0];
+    Object.keys(G.players).forEach(pid => {
+      if (pid === artist) { st(pid).fans += (res[pid] && res[pid].artist) || 0; return; }
+      const x = res[pid], s = st(pid);
+      if (!x || x.c < 0) { s.bl++; if (x && x.robbed) s.lost += x.robbed; return; }
+      s.a++; s.t += Math.max(0, G.ans[pid].t - G.qOpenAt);
+      if (x.ok) { s.ok++; if (x.golden) s.gold++; } else s.wr++;
+      s.best = Math.max(s.best, G.players[pid].streak || 0);
+      s.lost += (x.lost || 0) + (x.robbed || 0);
+    });
+    if (fastest) st(fastest).quick++;
+  }
   function endRound() {
     stopMedia();
+    Object.entries(G.players).forEach(([pid, p]) => { const s = st(pid); s.round = Math.max(s.round, p.score - (G.roundStart[pid] ?? p.score)); });
     G.phase = "roundend"; G.tEnd = 0; G.stepAt = Date.now() + HOLD.roundend;
     SFX.play("round_end");
   }
+  /* ---------- Finale ceremony: silly awards, then the podium ---------- */
+  function makeAwards() {
+    const ids = Object.keys(G.players), S = id => st(id), nm = n => n === 1 ? "" : "s";
+    const avg = id => (S(id).a ? S(id).t / S(id).a / 1000 : 99);
+    const defs = [
+      { e: "🧝", title: "The Quickest Elf", pick: () => ids.filter(id => S(id).a >= 3).sort((a, b) => avg(a) - avg(b))[0], line: id => `Answered in ${avg(id).toFixed(1)} seconds on average. Buddy would be proud.` },
+      { e: "❄️", title: "Snowball Fight Champion", pick: () => ids.filter(id => S(id).best >= 3).sort((a, b) => S(b).best - S(a).best)[0], line: id => `${S(id).best} right answers in a row. That snowball got huge.` },
+      { e: "💡", title: "The Clark Griswold", pick: () => ids.filter(id => S(id).round > 0).sort((a, b) => S(b).round - S(a).round)[0], line: id => `+${S(id).round} points in one round. Lit up the whole neighborhood.` },
+      { e: "🌟", title: "Golden Ornament Collector", pick: () => ids.filter(id => S(id).gold > 0).sort((a, b) => S(b).gold - S(a).gold)[0], line: id => `Nailed ${S(id).gold} golden ornament question${nm(S(id).gold)}.` },
+      { e: "🎨", title: "The Picasso Elf", pick: () => ids.filter(id => S(id).fans > 0).sort((a, b) => S(b).fans - S(a).fans)[0], line: id => `${S(id).fans} correct guess${S(id).fans === 1 ? "" : "es"} on their drawing. Straight to the fridge.` },
+      { e: "🚐", title: "The Cousin Eddie", pick: () => ids.filter(id => S(id).wr >= 3).sort((a, b) => S(b).wr - S(a).wr)[0], line: id => `${S(id).wr} wrong answers, and still having the best time. Merry Christmas, Clark!` },
+      { e: "🏠", title: "The Kevin McCallister", pick: () => ids.filter(id => S(id).bl >= 2).sort((a, b) => S(b).bl - S(a).bl)[0], line: id => `Left ${S(id).bl} questions home alone.` },
+      { e: "💚", title: "The Grinch", pick: () => ids.filter(id => S(id).lost >= 100).sort((a, b) => S(b).lost - S(a).lost)[0], line: id => `Lost ${S(id).lost} points to penalties and thieves. Heart still two sizes too small.` },
+      { e: "🩼", title: "The Tiny Tim", pick: () => (ids.length >= 4 ? sorted()[ids.length - 1].id : null), line: () => `Dead last, but God bless us, every one!` }
+    ];
+    const used = new Set(), out = [];
+    for (const d of defs) {
+      if (out.length >= 6) break;
+      const id = d.pick(); if (!id || used.has(id)) continue;
+      used.add(id); out.push({ e: d.e, title: d.title, pid: id, line: d.line(id) });
+    }
+    return out;
+  }
+  const finaleSteps = () => ["intro", ...G.finale.awards.map((_, i) => "award" + i), "p3", "p2", "p1", "end"].filter(k => k !== "p3" || sorted().length >= 3).filter(k => k !== "p2" || sorted().length >= 2);
+  function startFinale() {
+    if (!Object.keys(G.players).length) return;
+    stopMedia();
+    G.rid = null; G.showScores = false; G.hold = false; G.tEnd = 0;
+    G.finale = { awards: makeAwards(), i: 0 };
+    G.phase = "finale"; finaleStep();
+  }
+  function finaleStep() {
+    const steps = finaleSteps(), k = steps[G.finale.i];
+    G.finale.k = k;
+    G.stepAt = k === "end" ? 0 : Date.now() + (k === "intro" ? 6000 : k === "p1" ? 9000 : k.startsWith("p") ? 6000 : 8000);
+    if (k === "intro" || k.startsWith("p")) SFX.play("drumroll");
+    if (k.startsWith("award")) SFX.play("award", 0.2);
+    if (k.startsWith("p")) SFX.play(k === "p1" ? "fanfare" : "award", 2.6);
+  }
+  function finaleNext() { if (G.finale.k === "end") return toMenu(); G.finale.i++; finaleStep(); }
+
   function toMenu() { stopMedia(); G.phase = "menu"; G.rid = null; G.showScores = false; G.tEnd = 0; G.stepAt = 0; arm(); }
   /* In the menu, the autopilot starts the next round on its own when something is queued. */
   function arm(reset) {
@@ -511,7 +572,7 @@
     const r = cur(), inQ = r && QPHASES.includes(G.phase);
     const mid = r ? `<div class="mast-round"><span class="label">${r.kind === "alarm" ? "SURPRISE ROUND" : r.kind === "kid" ? "KID ROUND" : "NOW PLAYING"}</span><b>${esc(r.title)}</b>
         ${inQ ? `<span class="qn">Question ${G.qi + 1} of ${G.order.length}</span>${toughMeter(toughOf(r, qIndex()), r.mult)}` : ""}</div>`
-      : `<div class="mast-round"><span class="label">${G.kid ? "KID MODE" : "TONIGHT ONLY"}</span><b>${G.phase === "lobby" ? "Doors open!" : "Intermission"}</b></div>`;
+      : `<div class="mast-round"><span class="label">${G.kid ? "KID MODE" : "TONIGHT ONLY"}</span><b>${G.phase === "lobby" ? "Doors open!" : G.phase === "finale" ? "The Grand Finale" : "Intermission"}</b></div>`;
     return `<div class="sampler"><span class="n1">Rewind</span><span class="n2">Christmas Trivia</span></div>${mid}
       ${G.phase !== "lobby" ? `<div class="join-tag">${qr(joinUrl()) ? `<img src="${qr(joinUrl())}" alt="QR code to join">` : ""}<div class="lines"><span>JOIN AT</span><b>${esc(shortJoin())}</b><span>CODE</span><span class="code">${G.code}</span></div></div>` : ""}`;
   }
@@ -546,6 +607,28 @@
       <div class="stockings">${["🧦", "🧦", "🧦", "🧦", "🧦"].map((x, i) => `<span style="animation-delay:-${i * 0.7}s">${x}</span>`).join("")}</div>
       <div class="firebox">${fireOk ? `<video src="assets/media/fireplace.mp4" autoplay muted loop playsinline></video>`
         : `<div class="glow"></div><div class="flames">${"<i></i>".repeat(7)}</div><div class="logs"><i></i><i></i></div>`}</div></div>`;
+  }
+  function vFinale() {
+    const f = G.finale, k = f.k || "intro", ps = sorted();
+    if (k === "intro") return `<section class="intro finale"><div class="rain">${emojiRain("✨🏆🎄⭐", 22)}</div><p class="label">THE GRAND FINALE</p>
+      <h1>And the awards go to…</h1><p class="script sub">Everybody grab a cookie and settle in.</p><div class="drum">🥁</div></section>`;
+    if (k.startsWith("award")) {
+      const a = f.awards[+k.slice(5)], p = G.players[a.pid];
+      return `<section class="intro finale award" style="--n:${k}"><p class="label">AWARD ${+k.slice(5) + 1} OF ${f.awards.length}</p>
+        <div class="trophy">${a.e}</div><h1>${esc(a.title)}</h1>
+        <div class="winner">${ornament(pl(a.pid), "big")}<b>${esc(p ? p.name : "")}</b></div><p class="rule doily">${esc(a.line)}</p></section>`;
+    }
+    const shown = { p3: 1, p2: 2, p1: 3, end: 3 }[k];
+    const spot = (place, cls) => {
+      const p = ps[place - 1]; if (!p) return "";
+      const on = shown >= 4 - place;
+      return `<div class="step s${place}${on ? " on" : ""}">${on ? `<div class="who">${place === 1 ? '<span class="crown">👑</span>' : ""}${ornament(pl(p.id), "big")}<b>${esc(p.name)}</b><span>${p.score.toLocaleString()} pts</span></div>` : `<div class="who mystery">?</div>`}
+        <div class="block ${cls}">${place}</div></div>`;
+    };
+    return `<section class="podium-wrap${k === "end" ? " end" : ""}">${k === "p1" || k === "end" ? `<div class="rain">${emojiRain("🎉✨❄️🎄⭐🎁", 34)}</div>` : ""}
+      <h1>${k === "end" ? "Merry Christmas, ya filthy animals!" : k === "p1" ? "Our trivia champion!" : "The winners’ mantel"}</h1>
+      <div class="podium">${spot(2, "silver")}${spot(1, "gold")}${spot(3, "bronze")}</div>
+      ${k === "end" ? race("Final standings", false) : ""}</section>`;
   }
   function vMenu() {
     const q = G.queue.map(id => byId[id]).filter(Boolean);
@@ -737,8 +820,8 @@
     theme();
     put("#mast", mast());
     const r = cur();
-    const v = { lobby: vLobby, menu: vMenu, intro: vIntro, alarm: vIntro, silly: vSilly, ready: vReady, question: vQuestion, locked: vQuestion, reveal: vQuestion, roundend: vRoundEnd, drawpick: vDrawPick, drawing: vDrawing }[G.phase] || vLobby;
-    put("#stage", r || G.phase === "lobby" || G.phase === "menu" ? v() : vLobby());
+    const v = { lobby: vLobby, menu: vMenu, intro: vIntro, alarm: vIntro, silly: vSilly, ready: vReady, question: vQuestion, locked: vQuestion, reveal: vQuestion, roundend: vRoundEnd, drawpick: vDrawPick, drawing: vDrawing, finale: vFinale }[G.phase] || vLobby;
+    put("#stage", r || ["lobby", "menu", "finale"].includes(G.phase) ? v() : vLobby());
     attachMedia();
     renderTray();
     put("#overlay", overlay());

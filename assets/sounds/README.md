@@ -15,6 +15,9 @@ Drop MP3 files in this folder with these **exact** names. The big screen uses a 
 | `streak.mp3` | Someone hits a snowball streak (3 right in a row) | Ascending bells |
 | `silly.mp3` | Kid "Jingle Jiggle" break | Boing, kazoo, slide whistle |
 | `round_end.mp3` | Round is over | Jingle bells outro, "Merry Christmas!" |
+| `drumroll.mp3` | Finale: before the awards and each podium spot | Snare drum roll with a cymbal crash |
+| `award.mp3` | Finale: each silly award | Short chime, sleigh bells |
+| `fanfare.mp3` | Finale: the winner is revealed | Trumpet fanfare, "Hallelujah!" |
 | `alarm.mp3` | Any surprise round (fallback for all of them) | Siren, air horn |
 | `alarm_rudolph.mp3` … | One surprise round. Also: `alarm_grinch`, `alarm_homealone`, `alarm_griswold`, `alarm_snowday`, `alarm_turbo`, `alarm_nightmare`, `alarm_diehard` | Siren + a themed sound |
 | `music_lobby.mp3` | Loops quietly in the lobby, between rounds and when paused | Instrumental Christmas jazz |

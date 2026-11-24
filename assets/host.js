@@ -20,9 +20,9 @@
     if (!H) return "Next";
     const last = H.round && H.qi + 1 >= H.round.n;
     return { lobby: "Start the show", menu: H.queue.length ? "Start the next round now" : "Play the next round", intro: "First question", alarm: "First question", silly: "Next question",
-      ready: "Open answers now", drawpick: "Start drawing now", drawing: "Done drawing, start guessing", question: "Lock answers now", locked: "Reveal the answer", reveal: last ? "Finish the round" : "Next question", roundend: "Back to intermission" }[H.phase] || "Next";
+      ready: "Open answers now", finale: H.finale && H.finale.k === "end" ? "Back to intermission" : "Next award", drawpick: "Start drawing now", drawing: "Done drawing, start guessing", question: "Lock answers now", locked: "Reveal the answer", reveal: last ? "Finish the round" : "Next question", roundend: "Back to intermission" }[H.phase] || "Next";
   };
-  const phaseName = p => ({ lobby: "Lobby", menu: "Intermission", intro: "Round intro", alarm: "SURPRISE!", silly: "Jingle Jiggle", ready: "Reading time", drawpick: "Picking movies", drawing: "Drawing", question: "Answers open", locked: "Avatars landing", reveal: "Answer revealed", roundend: "Round over" }[p] || p);
+  const phaseName = p => ({ lobby: "Lobby", menu: "Intermission", intro: "Round intro", alarm: "SURPRISE!", silly: "Jingle Jiggle", ready: "Reading time", finale: "Finale ceremony", drawpick: "Picking movies", drawing: "Drawing", question: "Answers open", locked: "Avatars landing", reveal: "Answer revealed", roundend: "Round over" }[p] || p);
   const left = ms => Math.max(0, Math.ceil((ms - (H && !H.paused ? Date.now() - gotAt : 0)) / 1000));
 
   function renderHead() {
@@ -39,6 +39,7 @@
     if (H.paused) return "⏸ Paused. Nothing moves until you resume.";
     if (H.phase === "question") return `Answers open · ${left(H.tLeft)}s left`;
     if (H.phase === "ready") return "Players are reading the question…";
+    if (H.phase === "finale") return H.finale && H.finale.k === "end" ? "🏆 That’s a wrap! Merry Christmas!" : "🏆 The finale runs by itself. Tap the red button to skip ahead.";
     if (H.phase === "drawpick") return `Players are picking their movie · ${H.draw ? H.draw.done.length : 0} drawings in`;
     if (H.phase === "drawing") return `Drawing · ${left(H.tLeft)}s left · ${H.draw ? H.draw.done.length : 0} done`;
     if (H.phase === "menu" && H.hold) return "☕ Intermission. Tap the red button when you’re ready for the next round.";
@@ -117,6 +118,8 @@
       ${section("PICTURES, SOUNDS &amp; VIDEO", by("media"), "These use files you add to assets/media. Rounds without files are greyed out.")}
       ${section("SURPRISE ROUNDS 🚨", by("alarm"))}
       <button class="btn red big-btn" data-c="surprise">Sound a random surprise round now</button>
+      <p class="h-sec">THE GRAND FINALE 🏆</p><p class="small">Silly awards for everyone, then the podium. Play it after your last round.</p>
+      <button class="btn gold big-btn" data-c="finale">Start the finale ceremony</button>
       ${!H.kid ? section("KID ROUNDS 🧸", by("kid")) : ""}
       ${section("TIEBREAKERS", extra)}
       <p class="h-sec">PLAYERS (${H.players.length})</p>

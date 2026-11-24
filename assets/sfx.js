@@ -5,7 +5,7 @@ window.SFX = (() => {
   let ctx = null, muted = false, musicOn = true, base = "assets/sounds/";
   const buffers = {}, raw = {}, urls = {};
   const SLOTS = ["join", "round_intro", "question", "golden", "tick", "timeup", "land", "correct", "streak",
-    "silly", "round_end", "alarm", "alarm_rudolph", "alarm_grinch", "alarm_homealone", "alarm_griswold",
+    "silly", "round_end", "drumroll", "award", "fanfare", "alarm", "alarm_rudolph", "alarm_grinch", "alarm_homealone", "alarm_griswold",
     "alarm_snowday", "alarm_turbo", "alarm_nightmare", "alarm_diehard"];
   const MUSIC = ["music_lobby", "music_think"];
 
@@ -102,7 +102,15 @@ window.SFX = (() => {
     streak: (at = 0) => lib.powerup(at),
     silly: (at = 0) => { lib.boing(at); lib.boing(at + 0.7); },
     round_end: (at = 0) => { sleighbells(at, 20); [784, 988, 1175, 1568].forEach((f, i) => bell(f, at + 0.2 + i * 0.2, 0.08)); },
-    alarm: (at = 0) => siren(3, at)
+    alarm: (at = 0) => siren(3, at),
+    drumroll: (at = 0) => { for (let i = 0; i < 38; i++) noise(0.07, { at: at + i * 0.062, vol: 0.12 + i * 0.006, freq: 260, q: 0.7 }); noise(0.5, { at: at + 2.4, vol: 0.5, freq: 3500, q: 0.4 }); tone(70, 0.5, { vol: 0.3, at: at + 2.4, decay: true }); },
+    award: (at = 0) => { sleighbells(at, 8); [1319, 1568, 2093].forEach((f, i) => bell(f, at + i * 0.12, 0.09)); },
+    fanfare: (at = 0) => {
+      [[523, 0, .18], [523, .2, .12], [523, .34, .12], [659, .48, .5], [784, 1.0, .25], [659, 1.28, .2], [1047, 1.5, 1.2]].forEach(([f, t, d]) => {
+        tone(f, d, { type: "sawtooth", vol: 0.06, at: at + t }); tone(f * 1.5, d, { type: "triangle", vol: 0.04, at: at + t });
+      });
+      sleighbells(at + 1.5, 18);
+    }
   };
 
   /* ---------- music box melodies ---------- */
