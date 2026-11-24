@@ -1,23 +1,32 @@
 /* Rewind Christmas Trivia — question bank.
-   Each question: [question, correct answer, [three wrong answers], optional note shown on reveal].
+   Each question: [question, correct answer, [three wrong answers], optional note shown on reveal, optional media].
    Name That Year questions are [movie, year]; the game makes up the wrong years itself.
 
    Round options:
-     pts      points per correct answer
-     timer    seconds before answers lock automatically
-     wrong    points lost for a wrong answer
-     first    +1 bonus for the fastest correct answer
-     steal    each correct answer steals 1 point from the current leader
-     dark     the TV hides the question; it only shows on phones
-     squirrel wrong answers have to yell "SQUIRREL!"
-     big      the question is emoji, shown extra large
-   Alarm rounds also have: alarm (first line), tagline, gag (silly challenge), emoji (confetti),
-   phrase (what the TV says to Google: "Hey Google, <phrase>"), sfx (sound cues), fx (screen effect), c1/c2 colors. */
+     kind      "feature" (regular), "alarm" (surprise round with a siren), "kid" (kid mode), "media" (needs files)
+     tough     one digit per question: 1 easy (100 pts), 2 medium (200 pts), 3 hard (300 pts). Default 2.
+     timer     seconds per question (default 20). Kid mode makes every timer at least 30.
+     mult      multiply all points (2 = double points)
+     wrong     points lost for a wrong answer
+     first     bonus for the fastest right answer
+     steal     points each right answer takes from the current leader
+     everyone  points just for answering
+     dark      the TV hides the question; it only shows on phones
+     squirrel  wrong answers have to yell "SQUIRREL!"
+     big       the question is emoji, shown extra large
+     sillies   kid rounds: "Jingle Jiggle" challenges shown between questions
+     extra     hidden from "queue everything" (tiebreakers)
+   Alarm rounds also have: alarm (first line), tagline, emoji (confetti), sfx (fallback sounds), fx (screen effect), c1/c2 colors.
 
-window.LIGHTS_NORMAL = "trivia mode";
+   Media (5th item in a question):
+     {tune:"E4 1,E4 1,E4 2", bpm:180}   play a melody on the music box (note + length in beats, R = rest)
+     {img:"assets/media/x.jpg", fx:"blur"}   show a picture. fx "blur" or "zoom" starts hidden and clears up as time runs out
+     {audio:"assets/media/x.mp3"}       play a sound clip on the TV
+     {video:"assets/media/x.mp4", start:12, end:20}   play a video clip on the TV
+   A question whose picture, sound or video file is missing is skipped automatically. */
 
 window.ROUNDS = [
-{id:"classics",kind:"feature",title:"Opening Credits",sub:"The classics everyone knows by heart",pts:1,qs:[
+{id:"classics",kind:"feature",title:"Opening Credits",sub:"The classics everyone knows by heart",tough:"111211132213112",qs:[
 ["In It’s a Wonderful Life (1946), what is the name of George Bailey’s guardian angel?","Clarence",["Gabriel","Dudley","Harold"],"Clarence Odbody, Angel Second Class."],
 ["What’s the name of George Bailey’s hometown in It’s a Wonderful Life?","Bedford Falls",["Pottersville","Stars Hollow","Hill Valley"],"Pottersville is what it becomes if George had never been born."],
 ["In Miracle on 34th Street (1947), which department store hires Kris Kringle as its Santa?","Macy’s",["Gimbels","Bloomingdale’s","Woolworth’s"]],
@@ -34,7 +43,7 @@ window.ROUNDS = [
 ["How does Scott Calvin end up becoming Santa in The Santa Clause (1994)?","He puts on the suit after Santa falls off his roof",["He wins a radio contest","He signs a contract at the mall","The elves pick him at birth"],"The fine print on the card: whoever puts on the suit takes the job."],
 ["In Love Actually, what’s the title of aging rocker Billy Mack’s Christmas single?","Christmas Is All Around",["All I Want for Christmas","Christmas Wrapping","Rock Around the Mistletoe"]]
 ]},
-{id:"quotes",kind:"feature",title:"Name That Quote",sub:"Who said it, and in what movie?",lead:"Which movie is this line from?",pts:1,qs:[
+{id:"quotes",kind:"feature",title:"Name That Quote",sub:"Who said it, and in what movie?",lead:"Which movie is this line from?",tough:"11122221231311",qs:[
 ["“Son of a nutcracker!”","Elf",["Home Alone","The Santa Clause","Jingle All the Way"],"Buddy the Elf."],
 ["“Fra-gee-lay. It must be Italian!”","A Christmas Story",["Christmas Vacation","Home Alone","Scrooged"],"The Old Man, unboxing his major award."],
 ["“To me, you are perfect.” (held up on cue cards)","Love Actually",["The Holiday","Last Christmas","Four Christmases"],"Mark, at Juliet’s front door."],
@@ -50,7 +59,7 @@ window.ROUNDS = [
 ["“I can’t put my arms down!”","A Christmas Story",["Home Alone","Jingle All the Way","Christmas Vacation"],"Randy, stuffed into his snowsuit."],
 ["“You sit on a throne of lies!”","Elf",["Bad Santa","Miracle on 34th Street","Jingle All the Way"],"Buddy, to the department store Santa."]
 ]},
-{id:"emoji",kind:"feature",title:"Emoji Gift Guide",sub:"Name the movie from the pictures",lead:"Which movie is this?",pts:1,big:true,qs:[
+{id:"emoji",kind:"feature",title:"Emoji Gift Guide",sub:"Name the movie from the pictures",lead:"Which movie is this?",tough:"112112112222333221",big:true,qs:[
 ["🏠 😱 👦 ✈️ 🇫🇷","Home Alone",["Home Alone 2","Christmas Vacation","Planes, Trains and Automobiles"]],
 ["🧝 🍝 🍁 🗽","Elf",["Jack Frost","The Santa Clause","Fred Claus"]],
 ["🔫 👁️ 🦵 💡 🍗","A Christmas Story",["Home Alone","Scrooged","Christmas Vacation"]],
@@ -70,7 +79,7 @@ window.ROUNDS = [
 ["🎅 ⚖️ 📬 🏬","Miracle on 34th Street",["It’s a Wonderful Life","Bad Santa","The Santa Clause"]],
 ["🦌 🔴 👃 🏝️ 🧸","Rudolph the Red-Nosed Reindeer",["Prancer","Olive, the Other Reindeer","Frosty the Snowman"]]
 ]},
-{id:"cartoons",kind:"feature",title:"Saturday Morning Specials",sub:"Cartoons you watched in footie pajamas",pts:1,qs:[
+{id:"cartoons",kind:"feature",title:"Saturday Morning Specials",sub:"Cartoons you watched in footie pajamas",tough:"332212232312",qs:[
 ["In A Garfield Christmas Special (1987), Garfield finds a bundle of old letters and gives them to Grandma. Who wrote them?","Her late husband",["Garfield","Santa Claus","Jon’s mom"],"Jon’s grandpa wrote them to her years ago."],
 ["What’s the name of Jon Arbuckle’s brother, who lives on the family farm?","Doc Boy",["Doc Bob","Dusty","Billy Bob"]],
 ["In A Muppet Family Christmas (1987), the Muppets show up uninvited at whose mother’s farmhouse?","Fozzie Bear’s",["Kermit’s","Miss Piggy’s","Gonzo’s"]],
@@ -84,7 +93,7 @@ window.ROUNDS = [
 ["South Park’s 1997 Christmas episode introduced which festive and very gross mascot?","Mr. Hankey",["Towelie","Mr. Garrison","Terrance"],"Mr. Hankey, the Christmas Poo."],
 ["In Mickey’s Christmas Carol (1983), which Disney bad guy plays the Ghost of Christmas Yet to Come?","Pete",["Goofy","Willie the Giant","The Big Bad Wolf"],"Willie the Giant plays the Ghost of Christmas Present."]
 ]},
-{id:"eighties",kind:"feature",title:"Be Kind, Rewind",sub:"’80s deep cuts",pts:1,qs:[
+{id:"eighties",kind:"feature",title:"Be Kind, Rewind",sub:"’80s deep cuts",tough:"333312222321132",qs:[
 ["In Santa Claus: The Movie (1985), Dudley Moore plays an ambitious elf named what?","Patch",["Puck","Pippin","Jingles"]],
 ["John Lithgow plays the greedy toy tycoon in Santa Claus: The Movie. What’s his name?","B.Z.",["Mr. Hawthorne","Max Grabbe","Sid"]],
 ["Harry Dean Stanton plays a Christmas angel named Gideon in which 1985 Disney film?","One Magic Christmas",["Prancer","Ernest Saves Christmas","The Night They Saved Christmas"]],
@@ -101,7 +110,7 @@ window.ROUNDS = [
 ["In A Very Brady Christmas (1988), where does Mike Brady get trapped on Christmas Eve?","A collapsed building at a construction site",["A stuck elevator","A snowed-in cabin","An airport"]],
 ["Which future action star played Jack-Be-Nimble in the 1986 TV movie Babes in Toyland?","Keanu Reeves",["Tom Hanks","Johnny Depp","Rob Lowe"]]
 ]},
-{id:"nineties",kind:"feature",title:"Totally ’90s",sub:"Deep cuts from the decade of dial-up",pts:1,qs:[
+{id:"nineties",kind:"feature",title:"Totally ’90s",sub:"Deep cuts from the decade of dial-up",tough:"13322122131222",qs:[
 ["In The Santa Clause, what kind of company does Scott Calvin work for before he becomes Santa?","A toy company",["A bank","A car dealership","A law firm"]],
 ["Who plays Bernard, the head elf, in The Santa Clause?","David Krumholtz",["Eric Lloyd","Seth Green","Jonathan Taylor Thomas"]],
 ["Who plays Neal, the sweater-loving psychiatrist stepdad, in The Santa Clause?","Judge Reinhold",["Steve Guttenberg","Bob Saget","Mark Harmon"]],
@@ -117,7 +126,7 @@ window.ROUNDS = [
 ["In The Ref (1994), Denis Leary plays a burglar who takes whom hostage on Christmas Eve?","A bickering married couple",["A mall Santa","A family of elves","A busload of carolers"],"Kevin Spacey and Judy Davis."],
 ["In Sleepless in Seattle (1993), on what night does Jonah call the radio show about his dad?","Christmas Eve",["New Year’s Eve","Valentine’s Day","Thanksgiving"]]
 ]},
-{id:"modern",kind:"feature",title:"Now Playing",sub:"2000s to today, for the younger crowd",pts:1,qs:[
+{id:"modern",kind:"feature",title:"Now Playing",sub:"2000s to today, for the younger crowd",tough:"211221213112231232",qs:[
 ["Who directed Elf (2003)?","Jon Favreau",["Chris Columbus","Ron Howard","Adam McKay"]],
 ["Which comedy legend plays Papa Elf?","Bob Newhart",["Ed Asner","Dick Van Dyke","Steve Martin"],"Ed Asner plays Santa."],
 ["What does Buddy pour all over his spaghetti?","Maple syrup",["Hot fudge","Ketchup","Eggnog"],"Plus candy, marshmallows, and crumbled Pop-Tarts."],
@@ -137,7 +146,7 @@ window.ROUNDS = [
 ["In Jingle Jangle: A Christmas Journey (2020), Forest Whitaker plays a toymaker named what?","Jeronicus Jangle",["Jasper Jingle","Barnaby Bells","Toby Tinsel"]],
 ["In Surviving Christmas (2004), Ben Affleck pays a family to do what?","Let him spend Christmas with them",["Rent him their house","Sell him their tree farm","Let him play Santa at the mall"]]
 ]},
-{id:"scrooge",kind:"feature",title:"Bah, Humbug!",sub:"A Christmas Carol, every version",pts:1,qs:[
+{id:"scrooge",kind:"feature",title:"Bah, Humbug!",sub:"A Christmas Carol, every version",tough:"2111123231323211",qs:[
 ["In what year did Charles Dickens publish A Christmas Carol?","1843",["1812","1865","1899"]],
 ["What was the name of Scrooge’s late business partner?","Jacob Marley",["Bob Cratchit","Mr. Fezziwig","Fred"]],
 ["Who plays Scrooge in The Muppet Christmas Carol (1992)?","Michael Caine",["Patrick Stewart","Albert Finney","Kelsey Grammer"]],
@@ -155,7 +164,7 @@ window.ROUNDS = [
 ["Who plays the Scrooge-like playboy in Ghosts of Girlfriends Past (2009)?","Matthew McConaughey",["Ashton Kutcher","Owen Wilson","Bradley Cooper"]],
 ["What’s Tiny Tim’s famous closing line?","God bless us, every one!",["Merry Christmas to all!","Humbug no more!","Peace on Earth!"]]
 ]},
-{id:"soundtrack",kind:"feature",title:"Jingle Bell Rock",sub:"Songs, scores, and soundtracks",pts:1,qs:[
+{id:"soundtrack",kind:"feature",title:"Jingle Bell Rock",sub:"Songs, scores, and soundtracks",tough:"12121212322132",qs:[
 ["Who composed the score for Home Alone?","John Williams",["Danny Elfman","Hans Zimmer","James Horner"]],
 ["Kevin fakes a house party with mannequins and a cardboard Michael Jordan to which song?","Rockin’ Around the Christmas Tree",["Jingle Bell Rock","Run Rudolph Run","A Holly Jolly Christmas"],"The original is by Brenda Lee."],
 ["In Elf, which song does Buddy hear Jovie singing in the store’s shower?","Baby, It’s Cold Outside",["Let It Snow","Winter Wonderland","Silver Bells"]],
@@ -171,10 +180,10 @@ window.ROUNDS = [
 ["Who sang “You’re a Mean One, Mr. Grinch” in the 1966 cartoon?","Thurl Ravenscroft",["Boris Karloff","Burl Ives","Bing Crosby"],"He was also the voice of Tony the Tiger. Karloff narrates."],
 ["Billy Mack’s “Christmas Is All Around” rewrites which song, a 1994 hit for Wet Wet Wet?","Love Is All Around",["Wonderful Christmastime","Do They Know It’s Christmas?","Lonely This Christmas"]]
 ]},
-{id:"years",kind:"feature",title:"Name That Year",sub:"Pick the year it came out",lead:"What year did this come out?",pts:2,years:true,qs:[
+{id:"years",kind:"feature",title:"Name That Year",sub:"Pick the year it came out",lead:"What year did this come out?",tough:"122222223123322",years:true,qs:[
 ["Home Alone","1990"],["A Christmas Story","1983"],["National Lampoon’s Christmas Vacation","1989"],["Die Hard","1988"],["Gremlins","1984"],["The Muppet Christmas Carol","1992"],["The Nightmare Before Christmas","1993"],["The Santa Clause","1994"],["Jingle All the Way","1996"],["Elf","2003"],["The Polar Express","2004"],["How the Grinch Stole Christmas! (the cartoon)","1966"],["Rudolph the Red-Nosed Reindeer (the TV special)","1964"],["It’s a Wonderful Life","1946"],["Home Alone 2: Lost in New York","1992"]
 ]},
-{id:"finale",kind:"feature",title:"The Final Reel",sub:"The hardest questions of the night",pts:3,qs:[
+{id:"finale",kind:"feature",title:"The Final Reel",sub:"The hardest questions of the night",mult:2,rule:"Double points on every question.",tough:"323332322332",qs:[
 ["Bob Clark directed the 1974 slasher Black Christmas. Which holiday favorite did he direct nine years later?","A Christmas Story",["Gremlins","Scrooged","Home Alone"]],
 ["Which writer penned both Home Alone and Christmas Vacation?","John Hughes",["Chris Columbus","Harold Ramis","Ivan Reitman"]],
 ["Peter Billingsley, Ralphie himself, has a cameo in Elf. Who does he play?","Ming Ming, an elf",["The mailroom guy","A store Santa","A cab driver"]],
@@ -188,17 +197,17 @@ window.ROUNDS = [
 ["On the infamous 1978 Star Wars Holiday Special, what holiday does Chewbacca’s family celebrate?","Life Day",["Wookiee Christmas","Kashyyyk Day","Empire Day"]],
 ["Love Actually’s Richard Curtis co-wrote which British sitcom with Rowan Atkinson?","Blackadder",["Fawlty Towers","Monty Python’s Flying Circus","The Office"]]
 ]},
-{id:"tiebreak",kind:"feature",title:"Sudden Death",sub:"Tiebreakers",pts:1,qs:[
+{id:"tiebreak",kind:"feature",extra:true,title:"Sudden Death",sub:"Tiebreakers",tough:"333",qs:[
 ["Add up every gift in every verse of “The Twelve Days of Christmas.” How many gifts?","364",["78","144","312"],"78 is the number on the twelfth day alone."],
 ["In what year was the first commercial Christmas card sent in England?","1843",["1776","1865","1901"],"Same year as A Christmas Carol."],
 ["About how much did Home Alone earn worldwide in its original run?","$476 million",["$120 million","$250 million","$890 million"]]
 ]},
 
 /* ---------- Alarm rounds ---------- */
-{id:"rudolph",kind:"alarm",title:"Rudolph Round",pts:2,wrong:1,
+{id:"rudolph",kind:"alarm",title:"Rudolph Round",tough:"1111222213212333",wrong:100,
  alarm:"The lights just went red…",tagline:"A shiny nose has entered the building.",
- rule:"Right answers are worth 2. Wrong answers cost 1.",gag:"Everybody boop your own nose. Last one to boop does a reindeer noise.",
- emoji:"🦌🔴🦌✨",phrase:"Rudolph mode",fx:"pulse",c1:"#e8102e",c2:"#4a0009",
+ rule:"Wrong answers cost 100 points. Guess carefully!",
+ emoji:"🦌🔴🦌✨",fx:"pulse",c1:"#e8102e",c2:"#4a0009",
  sfx:[["siren",0],["honk",3.1],["honk",3.6]],qs:[
 ["In Rudolph the Red-Nosed Reindeer (1964), who narrates the story?","Sam the Snowman",["Frosty","Santa","Yukon Cornelius"],"Voiced by Burl Ives."],
 ["Which elf would rather be a dentist than make toys?","Hermey",["Bernard","Buddy","Pip"]],
@@ -217,10 +226,10 @@ window.ROUNDS = [
 ["What gift turns the Winter Warlock good?","A toy train",["A snow globe","A teddy bear","A kitten"]],
 ["In Rudolph’s Shiny New Year (1976), why does Baby New Year run away?","Everyone laughs at his big ears",["Everyone laughs at his nose","He’s afraid of fireworks","He lost his hourglass"]]
 ]},
-{id:"grinch",kind:"alarm",title:"Grinch Round",pts:1,steal:true,
+{id:"grinch",kind:"alarm",title:"Grinch Round",tough:"1122113223323221",steal:50,
  alarm:"Somebody stole the Christmas lights…",tagline:"Your hearts are two sizes too small. Let’s fix that.",
- rule:"Steal round: every right answer also steals 1 point from whoever is in first place.",gag:"Give us your best evil Grinch grin. The host picks the creepiest.",
- emoji:"💚😈🎄🐕",phrase:"Grinch mode",fx:"pulse",c1:"#45c22c",c2:"#0b2a07",
+ rule:"Steal round: every right answer swipes 50 points from whoever is in first place.",
+ emoji:"💚😈🎄🐕",fx:"pulse",c1:"#45c22c",c2:"#0b2a07",
  sfx:[["siren",0],["slide",3.1],["wahwah",4.0]],qs:[
 ["What’s the name of the Grinch’s dog?","Max",["Rex","Spot","Buster"]],
 ["How many sizes does the Grinch’s heart grow?","Three",["Two","Five","Ten"]],
@@ -239,10 +248,10 @@ window.ROUNDS = [
 ["What is the full name of the miserly villain in It’s a Wonderful Life?","Henry F. Potter",["Harold Potter","Henry Bailey","Ebenezer Potter"]],
 ["In Elf, who plays the furious children’s author Miles Finch?","Peter Dinklage",["Warwick Davis","Danny DeVito","Tony Cox"]]
 ]},
-{id:"homealone",kind:"alarm",title:"Wet Bandits Round",pts:2,timer:20,
+{id:"homealone",kind:"alarm",title:"Wet Bandits Round",tough:"2112232213112212",timer:15,wrong:50,
  alarm:"Intruders on the property…",tagline:"Keep the change, ya filthy animals.",
- rule:"Booby-trap rule: 20 seconds per question, then orders lock. Right answers are worth 2.",gag:"Everybody slap your cheeks and scream like you just put on aftershave.",
- emoji:"🏠😱🧨🎨",phrase:"Wet Bandits mode",fx:"police",c1:"#e8102e",c2:"#1846e0",
+ rule:"Booby traps: only 15 seconds per question, and wrong answers cost 50.",
+ emoji:"🏠😱🧨🎨",fx:"police",c1:"#e8102e",c2:"#1846e0",
  sfx:[["klaxon",0],["scream",3.1]],qs:[
 ["What Chicago suburb do the McCallisters live in?","Winnetka",["Naperville","Evanston","Oak Park"]],
 ["Where is the family flying for Christmas in the first movie?","Paris",["London","Miami","Rome"]],
@@ -261,10 +270,10 @@ window.ROUNDS = [
 ["What gadget does Kevin use to record and slow down his voice in Lost in New York?","A Talkboy",["A Walkman","A Speak & Spell","A Teddy Ruxpin"]],
 ["Who directed the first two Home Alone movies?","Chris Columbus",["John Hughes","Ron Howard","Joe Dante"]]
 ]},
-{id:"griswold",kind:"alarm",title:"Griswold Round",pts:2,squirrel:true,
+{id:"griswold",kind:"alarm",title:"Griswold Round",tough:"22112222122112133",squirrel:true,
  alarm:"Somebody plugged in the lights…",tagline:"Hallelujah! Where’s the Tylenol?",
- rule:"Right answers are worth 2. Get one wrong and your phone will tell you to yell SQUIRREL!",gag:"Everybody stand up and freeze like a squirrel just jumped out of the tree.",
- emoji:"💡🐿️🎄🚐",phrase:"Griswold mode",fx:"twinkle",c1:"#ffd166",c2:"#e8283c",ink:"#fff",
+ rule:"Get one wrong and your phone tells you to yell SQUIRREL!",
+ emoji:"💡🐿️🎄🚐",fx:"twinkle",c1:"#ffd166",c2:"#e8283c",ink:"#fff",
  sfx:[["siren",0],["powerup",3.1],["boing",3.8]],qs:[
 ["How many imported Italian twinkle lights does Clark put on the house?","25,000",["2,500","10,000","250,000"]],
 ["What’s the name of Cousin Eddie’s dog?","Snots",["Buster","Mutt","Bubba"]],
@@ -284,10 +293,10 @@ window.ROUNDS = [
 ["Christmas Vacation grew out of a John Hughes story in National Lampoon magazine. What was it called?","Christmas ’59",["Grandpa’s Christmas","The Christmas Lights","Griswold Family Christmas"]],
 ["Who sings the theme song “Christmas Vacation”?","Mavis Staples",["Aretha Franklin","Tina Turner","Patti LaBelle"]]
 ]},
-{id:"snowday",kind:"alarm",title:"Snow Day Round",pts:1,
+{id:"snowday",kind:"alarm",title:"Snow Day Round",tough:"1111331222221",everyone:25,
  alarm:"School is cancelled…",tagline:"No homework. No school. Just Christmas TV.",
- rule:"All TV, no movies. Every question is about a holiday episode.",gag:"Snowball fight! Crumple up a napkin and throw it at the host.",
- emoji:"❄️⛄❄️📺",phrase:"Snow Day mode",fx:"snow",c1:"#9cc3f0",c2:"#13305e",
+ rule:"All TV, no movies. Snow day bonus: 25 points just for answering, right or wrong.",
+ emoji:"❄️⛄❄️📺",fx:"snow",c1:"#9cc3f0",c2:"#13305e",
  sfx:[["siren",0],["jingle",3.1],["jingle",3.6]],qs:[
 ["On Friends, Ross can’t find a Santa costume. What does he dress as instead?","The Holiday Armadillo",["The Hanukkah Hippo","The Kwanzaa Koala","Superman"]],
 ["What holiday does Frank Costanza invent on Seinfeld?","Festivus",["Chrismukkah","Frankmas","Kwanzaa-bot"],"Chrismukkah came from The O.C."],
@@ -303,10 +312,10 @@ window.ROUNDS = [
 ["What 1966 TV tradition from New York’s WPIX showed nothing but a crackling fireplace for hours?","The Yule Log",["The Christmas Candle","Midnight Mass","The Fireplace Channel"]],
 ["Justin Timberlake and Andy Samberg’s 2006 SNL Christmas song is called what?","Dick in a Box",["Lazy Sunday","Jingle Bell Roll","Christmas Jam"]]
 ]},
-{id:"turbo",kind:"alarm",title:"Turbo Time",pts:1,timer:10,first:true,
+{id:"turbo",kind:"alarm",title:"Turbo Time",tough:"12122212111112111",timer:10,first:200,
  alarm:"The toy store doors just opened…",tagline:"There is ONE Turbo-Man left. Grab it.",
- rule:"Lightning round: 10 seconds per question. The fastest right answer gets a bonus point.",gag:"Strike your best Turbo-Man pose and yell IT’S TURBO TIME!",
- emoji:"🤖🦸🎁⚡",phrase:"Turbo mode",fx:"pulse",c1:"#ffb627",c2:"#e2420c",ink:"#1a0b00",
+ rule:"Speed round: 10 seconds per question. The fastest right answer grabs a 200-point Turbo bonus.",
+ emoji:"🤖🦸🎁⚡",fx:"pulse",c1:"#ffb627",c2:"#e2420c",ink:"#1a0b00",
  sfx:[["klaxon",0],["slideUp",3.1],["powerup",3.8]],qs:[
 ["What’s Turbo-Man’s catchphrase?","It’s Turbo Time!",["Turbo power, go!","Activate Turbo!","To the Turbo Cave!"]],
 ["What’s the name of Arnold Schwarzenegger’s character in Jingle All the Way?","Howard Langston",["Howard Tanner","Harry Langston","Herb Lancaster"]],
@@ -326,10 +335,10 @@ window.ROUNDS = [
 ["Besides Super Mario Bros., which light-gun game came on the NES combo cartridge?","Duck Hunt",["Excitebike","Hogan’s Alley","The Legend of Zelda"]],
 ["“It’s Morphin’ Time!” Whose action figures sold out in 1993?","Power Rangers",["Ninja Turtles","Captain Planet","Voltron"]]
 ]},
-{id:"nightmare",kind:"alarm",title:"Nightmare Round",pts:2,dark:true,
+{id:"nightmare",kind:"alarm",title:"Nightmare Round",tough:"1121221233213213",dark:true,
  alarm:"Lights out…",tagline:"What’s this? What’s this? A spooky round, that’s what.",
- rule:"Lights out! Questions only show up on your phones. Right answers are worth 2.",gag:"Everybody whisper “Sandy Claws” three times. Spookily.",
- emoji:"🎃💀🦇👻",phrase:"Nightmare mode",fx:"flicker",c1:"#7b3dff",c2:"#ff6a1a",
+ rule:"Lights out! The questions only show up on your phones.",
+ emoji:"🎃💀🦇👻",fx:"flicker",c1:"#7b3dff",c2:"#ff6a1a",
  sfx:[["siren",0],["wobble",3.1]],qs:[
 ["What’s Jack Skellington’s title in Halloween Town?","The Pumpkin King",["The Skeleton Lord","The King of Bones","The Mayor"]],
 ["What’s the name of Jack’s ghost dog?","Zero",["Bones","Spooky","Casper"]],
@@ -348,10 +357,10 @@ window.ROUNDS = [
 ["What is the killer dressed as in the controversial 1984 slasher Silent Night, Deadly Night?","Santa Claus",["An elf","A snowman","A reindeer"]],
 ["In the Finnish film Rare Exports (2010), what do diggers find buried inside a mountain?","The original Santa Claus",["A frozen dinosaur","A reindeer graveyard","A Viking ship"],"And he is not jolly."]
 ]},
-{id:"diehard",kind:"alarm",title:"Yippee-Ki-Yay Round",pts:2,
+{id:"diehard",kind:"alarm",title:"Yippee-Ki-Yay Round",tough:"1112222313122222",mult:2,
  alarm:"Shots fired at Nakatomi Plaza…",tagline:"Welcome to the party, pal.",
- rule:"Christmas action movies only. Right answers are worth 2.",gag:"Shoes off. Make fists with your toes. Keep doing it the whole round.",
- emoji:"💥🔫🎄🏢",phrase:"Yippee mode",fx:"pulse",c1:"#ff6a00",c2:"#3a0e00",
+ rule:"Christmas action movies only. Every point is doubled.",
+ emoji:"💥🔫🎄🏢",fx:"pulse",c1:"#ff6a00",c2:"#3a0e00",
  sfx:[["klaxon",0],["boom",3.1]],qs:[
 ["What’s the name of the building in Die Hard?","Nakatomi Plaza",["Klaxon Tower","Gruber Building","Pacific Plaza"]],
 ["What’s the name of John McClane’s wife?","Holly",["Karen","Lucy","Gail"]],
@@ -369,5 +378,145 @@ window.ROUNDS = [
 ["In Reindeer Games (2000), the crew robs a casino dressed as what?","Santa Claus",["Elves","Reindeer","Snowmen"]],
 ["In The Long Kiss Goodnight (1996), Geena Davis plays a schoolteacher who learns she used to be what?","A government assassin",["A fighter pilot","A cat burglar","A Navy SEAL"]],
 ["Robert Downey Jr. and Val Kilmer star in which Christmas-set 2005 crime comedy?","Kiss Kiss Bang Bang",["The Nice Guys","Tango & Cash","The Last Boy Scout"]]
+]},
+/* ---------- Speed round ---------- */
+{id:"blitzen",kind:"feature",title:"Blitzen’s Lightning Round",sub:"Five seconds. No thinking. Just tap.",timer:5,speed:true,
+ rule:"Only 5 seconds per question! Fast answers score big.",tough:"11111111111111",qs:[
+["Frosty is made of…","Snow",["Ice cream","Clay","Cotton"]],
+["The Grinch is…","Green",["Red","Blue","Purple"]],
+["Buddy the Elf is played by…","Will Ferrell",["Jim Carrey","Tim Allen","Adam Sandler"]],
+["Kevin’s mom screams…","KEVIN!",["BUZZ!","FULLER!","HARRY!"]],
+["Scrooge says…","Bah, humbug!",["Ho ho ho!","Cowabunga!","Yippee!"]],
+["Jack Skellington rules…","Halloween Town",["Christmas Town","Whoville","Bedford Falls"]],
+["Ralphie wants a…","BB gun",["Bike","Puppy","Sled"]],
+["Cousin Eddie lives in an…","RV",["Igloo","Castle","Treehouse"]],
+["The Polar Express is a…","Train",["Bus","Sleigh","Plane"]],
+["Die Hard’s hero is…","John McClane",["Hans Gruber","Al Powell","Argyle"]],
+["Olaf is a…","Snowman",["Reindeer","Troll","Elf"]],
+["Santa’s sleigh is pulled by…","Reindeer",["Huskies","Horses","Penguins"]],
+["Turbo-Man’s line: “It’s ___ time!”","Turbo",["Hammer","Party","Snack"]],
+["Mariah wants for Christmas…","You",["A pony","Snow","Money"]]
+]},
+
+/* ---------- Music box: melodies are played by the big screen. All public-domain carols. ---------- */
+{id:"musicbox",kind:"feature",title:"Grandma’s Music Box",sub:"Name that carol",lead:"Name that carol!",musicbox:true,
+ rule:"Listen to the music box. The sooner you name it, the more you score.",tough:"11112222232232",qs:[
+["Name that carol!","Jingle Bells",["Deck the Halls","Up on the Housetop","Jolly Old Saint Nicholas"],"Written for Thanksgiving, not Christmas!",{tune:"E4 1,E4 1,E4 2,E4 1,E4 1,E4 2,E4 1,G4 1,C4 1.5,D4 .5,E4 4,F4 1,F4 1,F4 1.5,F4 .5,F4 1,E4 1,E4 1,E4 .5,E4 .5,E4 1,D4 1,D4 1,E4 1,D4 2,G4 2",bpm:190}],
+["Name that carol!","Deck the Halls",["We Wish You a Merry Christmas","Jingle Bells","The Holly and the Ivy"],"Fa la la la la, la la la la.",{tune:"G4 1.5,F4 .5,E4 1,D4 1,C4 1,D4 1,E4 1,C4 1,D4 .5,E4 .5,F4 .5,D4 .5,E4 1.5,D4 .5,C4 1,B3 1,C4 2",bpm:150}],
+["Name that carol!","Silent Night",["Away in a Manger","O Holy Night","What Child Is This?"],"First sung in Austria in 1818, with a guitar.",{tune:"G4 1.5,A4 .5,G4 1,E4 3,G4 1.5,A4 .5,G4 1,E4 3,D5 2,D5 1,B4 3,C5 2,C5 1,G4 3",bpm:110}],
+["Name that carol!","We Wish You a Merry Christmas",["Deck the Halls","Here We Come A-Wassailing","Good King Wenceslas"],"Now bring us some figgy pudding!",{tune:"D4 1,G4 1,G4 .5,A4 .5,G4 .5,F#4 .5,E4 1,E4 1,E4 1,A4 1,A4 .5,B4 .5,A4 .5,G4 .5,F#4 1,D4 1,D4 1,B4 1,B4 .5,C5 .5,B4 .5,A4 .5,G4 1,E4 1,D4 .5,D4 .5,E4 1,A4 1,F#4 1,G4 2",bpm:170}],
+["Name that carol!","Joy to the World",["Hark! The Herald Angels Sing","O Come, All Ye Faithful","Angels We Have Heard on High"],"",{tune:"C5 1,B4 .75,A4 .25,G4 1.5,F4 .5,E4 1,D4 1,C4 1.5,G4 .5,A4 1.5,A4 .5,B4 1.5,B4 .5,C5 3",bpm:120}],
+["Name that carol!","O Christmas Tree",["O Little Town of Bethlehem","Silent Night","The First Noel"],"Originally the German song “O Tannenbaum.”",{tune:"C4 1,F4 .75,F4 .25,F4 1.5,G4 .5,A4 .75,A4 .25,A4 1.5,A4 .5,G4 .5,A4 .5,Bb4 1,E4 1,G4 1,F4 1",bpm:110}],
+["Name that carol!","Hark! The Herald Angels Sing",["Joy to the World","O Come, All Ye Faithful","Angels We Have Heard on High"],"The tune is by Felix Mendelssohn.",{tune:"D4 1,G4 1,G4 1.5,F#4 .5,G4 1,B4 1,B4 1,A4 1,D5 1,D5 1,D5 1.5,C5 .5,B4 1,A4 1,B4 2",bpm:130}],
+["Name that carol!","The First Noel",["O Holy Night","Silent Night","Away in a Manger"],"",{tune:"E4 .5,D4 .5,C4 1.5,D4 .5,E4 .5,F4 .5,G4 2,A4 .5,B4 .5,C5 1,B4 1,A4 1,G4 2",bpm:120}],
+["Name that carol!","O Come, All Ye Faithful",["Joy to the World","Hark! The Herald Angels Sing","Good King Wenceslas"],"Also sung in Latin as “Adeste Fideles.”",{tune:"G4 1,G4 2,D4 1,G4 1,A4 2,D4 2,B4 1,A4 1,B4 1,C5 1,B4 2,A4 1,G4 1",bpm:110}],
+["Name that carol!","Good King Wenceslas",["God Rest Ye Merry, Gentlemen","Jolly Old Saint Nicholas","The Holly and the Ivy"],"He looked out on the Feast of Stephen.",{tune:"G4 1,G4 1,G4 1,A4 1,G4 1,G4 1,D4 2,E4 1,D4 1,E4 1,F#4 1,G4 2,G4 2",bpm:130}],
+["Name that carol!","God Rest Ye Merry, Gentlemen",["We Three Kings","Good King Wenceslas","What Child Is This?"],"Scrooge chases off a boy singing this one.",{tune:"E4 1,E4 1,B4 1,B4 1,A4 1,G4 1,F#4 1,E4 1,D4 1,E4 1,F#4 1,G4 1,A4 1,B4 3",bpm:140}],
+["Name that carol!","Angels We Have Heard on High",["Hark! The Herald Angels Sing","Joy to the World","O Come, All Ye Faithful"],"Glo-o-o-o-o-o-ria!",{tune:"A4 1,A4 1,A4 1,C5 1,C5 1.5,Bb4 .5,A4 2,A4 1,G4 1,A4 1,C5 1,A4 1.5,G4 .5,F4 2",bpm:120}],
+["Name that carol!","Jolly Old Saint Nicholas",["Up on the Housetop","Jingle Bells","Deck the Halls"],"",{tune:"B4 1,B4 1,B4 1,B4 1,A4 1,A4 1,A4 2,G4 1,G4 1,G4 1,G4 1,B4 4",bpm:120}],
+["Name that carol!","The Twelve Days of Christmas",["We Wish You a Merry Christmas","Deck the Halls","Here We Come A-Wassailing"],"",{tune:"D4 .5,D4 .5,D4 1,G4 .5,G4 .5,G4 1,F#4 .5,G4 .5,A4 .5,B4 .5,C5 .5,A4 .5,B4 1.5,D5 .5,E5 .5,C5 .5,B4 .5,G4 .5,A4 1,G4 2",bpm:130}]
+]},
+
+/* ---------- Media rounds: drop files into assets/media/ with these exact names (see assets/media/README.md).
+   Questions whose file is missing are skipped. A round with no files at all is hidden. ---------- */
+{id:"framegame",kind:"media",title:"The Frame Game",sub:"Guess the movie from one blurry frame",lead:"Which movie is this?",
+ rule:"The picture starts blurry and clears up as time runs out. Guess early for more points!",tough:"112112121212",qs:[
+["Which movie is this?","Home Alone",["Home Alone 2","Christmas Vacation","Jingle All the Way"],"",{img:"assets/media/home-alone.jpg",fx:"blur"}],
+["Which movie is this?","Elf",["The Santa Clause","Fred Claus","Jack Frost"],"",{img:"assets/media/elf.jpg",fx:"blur"}],
+["Which movie is this?","A Christmas Story",["Christmas Vacation","Scrooged","Home Alone"],"",{img:"assets/media/a-christmas-story.jpg",fx:"blur"}],
+["Which movie is this?","Christmas Vacation",["Deck the Halls","Christmas with the Kranks","Home Alone"],"",{img:"assets/media/christmas-vacation.jpg",fx:"blur"}],
+["Which movie is this?","Die Hard",["Lethal Weapon","Die Hard 2","Violent Night"],"",{img:"assets/media/die-hard.jpg",fx:"zoom"}],
+["Which movie is this?","How the Grinch Stole Christmas",["Rudolph the Red-Nosed Reindeer","Frosty the Snowman","Elf"],"",{img:"assets/media/grinch.jpg",fx:"blur"}],
+["Which movie is this?","The Polar Express",["Arthur Christmas","Klaus","The Christmas Chronicles"],"",{img:"assets/media/polar-express.jpg",fx:"zoom"}],
+["Which movie is this?","The Nightmare Before Christmas",["Corpse Bride","Gremlins","Beetlejuice"],"",{img:"assets/media/nightmare-before-christmas.jpg",fx:"blur"}],
+["Which movie is this?","The Muppet Christmas Carol",["Scrooged","Mickey’s Christmas Carol","A Muppet Family Christmas"],"",{img:"assets/media/muppet-christmas-carol.jpg",fx:"zoom"}],
+["Which movie is this?","The Santa Clause",["Jack Frost","Elf","Fred Claus"],"",{img:"assets/media/santa-clause.jpg",fx:"blur"}],
+["Which movie is this?","Gremlins",["Krampus","Batman Returns","Ghostbusters"],"",{img:"assets/media/gremlins.jpg",fx:"zoom"}],
+["Which movie is this?","Love Actually",["The Holiday","Last Christmas","Bridget Jones’s Diary"],"",{img:"assets/media/love-actually.jpg",fx:"blur"}]
+]},
+{id:"soundbites",kind:"media",title:"Soundbites",sub:"Name the movie from the sound clip",lead:"Listen! Which movie?",
+ rule:"Listen to the clip on the TV. The sooner you answer, the more you score.",tough:"111212121212",qs:[
+["Listen! Which movie?","Home Alone",["Home Alone 2","Christmas Vacation","Jingle All the Way"],"",{audio:"assets/media/home-alone.mp3"}],
+["Listen! Which movie?","Elf",["The Santa Clause","Fred Claus","Jack Frost"],"",{audio:"assets/media/elf.mp3"}],
+["Listen! Which movie?","A Christmas Story",["Christmas Vacation","Scrooged","Home Alone"],"",{audio:"assets/media/a-christmas-story.mp3"}],
+["Listen! Which movie?","Christmas Vacation",["Deck the Halls","Christmas with the Kranks","Home Alone"],"",{audio:"assets/media/christmas-vacation.mp3"}],
+["Listen! Which movie?","Die Hard",["Lethal Weapon","Die Hard 2","Violent Night"],"",{audio:"assets/media/die-hard.mp3"}],
+["Listen! Which movie?","How the Grinch Stole Christmas",["Rudolph the Red-Nosed Reindeer","Frosty the Snowman","Elf"],"",{audio:"assets/media/grinch.mp3"}],
+["Listen! Which movie?","The Polar Express",["Arthur Christmas","Klaus","The Christmas Chronicles"],"",{audio:"assets/media/polar-express.mp3"}],
+["Listen! Which movie?","The Nightmare Before Christmas",["Corpse Bride","Gremlins","Beetlejuice"],"",{audio:"assets/media/nightmare-before-christmas.mp3"}],
+["Listen! Which movie?","Jingle All the Way",["The Santa Clause","Toy Story","Kindergarten Cop"],"",{audio:"assets/media/jingle-all-the-way.mp3"}],
+["Listen! Which movie?","It’s a Wonderful Life",["Miracle on 34th Street","White Christmas","Holiday Inn"],"",{audio:"assets/media/its-a-wonderful-life.mp3"}],
+["Listen! Which movie?","Scrooged",["Trading Places","Ghostbusters","Groundhog Day"],"",{audio:"assets/media/scrooged.mp3"}],
+["Listen! Which movie?","Love Actually",["The Holiday","Last Christmas","Notting Hill"],"",{audio:"assets/media/love-actually.mp3"}]
+]},
+{id:"clipshow",kind:"media",title:"Clip Show",sub:"Name the movie from a few seconds of video",lead:"Watch! Which movie?",
+ rule:"Watch the clip on the TV. The sooner you answer, the more you score.",tough:"11121212",qs:[
+["Watch! Which movie?","Home Alone",["Home Alone 2","Christmas Vacation","Jingle All the Way"],"",{video:"assets/media/clip-home-alone.mp4"}],
+["Watch! Which movie?","Elf",["The Santa Clause","Fred Claus","Jack Frost"],"",{video:"assets/media/clip-elf.mp4"}],
+["Watch! Which movie?","A Christmas Story",["Christmas Vacation","Scrooged","Home Alone"],"",{video:"assets/media/clip-a-christmas-story.mp4"}],
+["Watch! Which movie?","Christmas Vacation",["Deck the Halls","Christmas with the Kranks","Home Alone"],"",{video:"assets/media/clip-christmas-vacation.mp4"}],
+["Watch! Which movie?","Die Hard",["Lethal Weapon","Die Hard 2","Violent Night"],"",{video:"assets/media/clip-die-hard.mp4"}],
+["Watch! Which movie?","How the Grinch Stole Christmas",["Rudolph the Red-Nosed Reindeer","Frosty the Snowman","Elf"],"",{video:"assets/media/clip-grinch.mp4"}],
+["Watch! Which movie?","The Polar Express",["Arthur Christmas","Klaus","The Christmas Chronicles"],"",{video:"assets/media/clip-polar-express.mp4"}],
+["Watch! Which movie?","The Muppet Christmas Carol",["Scrooged","Mickey’s Christmas Carol","A Muppet Family Christmas"],"",{video:"assets/media/clip-muppet-christmas-carol.mp4"}]
+]},
+
+/* ---------- Kid rounds (kid mode). Silly "Jingle Jiggle" challenges pop up between questions. ---------- */
+{id:"kidworkshop",kind:"kid",title:"Santa’s Workshop",sub:"Christmas questions for little elves",timer:30,
+ rule:"30 seconds per question. No points lost, ever!",tough:"11111121111211",
+ emoji:"🎅🎁🧝🍪",c1:"#e8283c",c2:"#ffd166",
+ sillies:["Waddle like a penguin to the nearest wall and back!","Say HO HO HO in your deepest Santa voice!","Wiggle your nose like Rudolph for 10 seconds!","Do 5 big elf jumps! Count them out loud!","Pretend to unwrap the BIGGEST present in the world!"],qs:[
+["What color is Santa’s suit?","Red",["Blue","Green","Purple"]],
+["Where does Santa live?","The North Pole",["The South Pole","The Moon","Hawaii"]],
+["What do kids leave out for Santa?","Milk and cookies",["Pizza","Pickles","Soup"]],
+["What do you call Santa’s little helpers?","Elves",["Gnomes","Trolls","Fairies"]],
+["How does Santa get into houses?","Down the chimney",["Through the doggy door","He digs a tunnel","He rings the doorbell"]],
+["What does Santa say?","Ho ho ho!",["Moo moo moo!","Yee-haw!","Cock-a-doodle-doo!"]],
+["Which reindeer has a shiny red nose?","Rudolph",["Dasher","Blitzen","Comet"]],
+["What do you hang on the fireplace for Santa to fill?","Stockings",["Mittens","Backpacks","Buckets"]],
+["What goes on top of a Christmas tree?","A star",["A sock","A pumpkin","A sandwich"]],
+["What do naughty kids get in their stocking?","Coal",["Broccoli","Homework","Spiders"]],
+["What is a snowman’s nose usually made of?","A carrot",["A banana","A pickle","A crayon"]],
+["What does Mrs. Claus love to bake?","Cookies",["Tacos","Spaghetti","Hot dogs"]],
+["How many sides does a snowflake have?","Six",["Four","Three","Ten"]],
+["What do people kiss under at Christmas?","Mistletoe",["A cactus","A broom","An umbrella"]]
+]},
+{id:"kidmovies",kind:"kid",title:"Reindeer Games",sub:"Christmas cartoons and movies",timer:30,
+ rule:"30 seconds per question. No points lost, ever!",tough:"11111212121212",
+ emoji:"🦌⛄🚂💚",c1:"#1f8f52",c2:"#9cc3f0",
+ sillies:["Freeze like a snowman! Don’t move until the next question!","Do your best reindeer prance in place!","Make a snow angel on the floor (or the couch)!","Give the person next to you a candy-cane high five!","Shake like a bowl full of jelly!"],qs:[
+["What color is the Grinch?","Green",["Blue","Orange","Pink"]],
+["What’s the name of the snowman in Frozen?","Olaf",["Sven","Kristoff","Frosty"]],
+["What’s the name of the Grinch’s dog?","Max",["Spot","Rex","Buddy"]],
+["What brings Frosty the Snowman to life?","A magic hat",["A magic scarf","A magic carrot","A magic snowball"]],
+["In The Polar Express, what kind of ride takes the kids to the North Pole?","A train",["A bus","A rocket","A hot air balloon"]],
+["What does Buddy the Elf put on his spaghetti?","Maple syrup",["Ketchup","Ice cream","Peanut butter"]],
+["In the Rudolph movie, which elf wants to be a dentist?","Hermey",["Buddy","Jingle","Pip"]],
+["Where does the Grinch live?","On a mountain",["Under the sea","In a castle","In a tree house"]],
+["What does Olaf love?","Warm hugs",["Hot soup","Sunburns","Ice skating"]],
+["In The Nightmare Before Christmas, what’s the name of Jack’s ghost dog?","Zero",["Ghosty","Bones","Spooky"]],
+["In Rudolph, which island do the misfit toys live on?","The Island of Misfit Toys",["Candy Cane Island","Toy Town Island","Lost Toy Lagoon"]],
+["In Klaus, what is Jesper’s job?","Mail carrier",["Baker","Toymaker","Lumberjack"]],
+["In The Grinch, what does the Grinch dress up as to steal Christmas?","Santa Claus",["A snowman","An elf","A reindeer"]],
+["In Home Alone, what’s the name of the kid left home alone?","Kevin",["Buzz","Fuller","Harry"]]
+]},
+{id:"kidjokes",kind:"kid",title:"Snow Silly!",sub:"Christmas jokes. Pick the punchline!",lead:"Pick the punchline!",timer:30,
+ rule:"Pick the funniest punchline. 30 seconds per question. No points lost, ever!",tough:"11211212121122",
+ emoji:"🤪⛄🍪🎄",c1:"#b02c82",c2:"#ffb627",
+ sillies:["Sing “Jingle Bells” like a cat. Meows only!","Tell everyone your best Christmas joke!","Walk like a stiff gingerbread man!","Flap your arms like a flying reindeer!","Laugh like Santa for 10 seconds straight!"],qs:[
+["What do snowmen eat for breakfast?","Frosted Flakes",["Snow cones","Cold toast","Ice pops"]],
+["What do you call a cat on the beach at Christmas?","Sandy Claws",["Kitty Kringle","Purr-ty Animal","Beach Kitten"]],
+["What do elves learn in school?","The elf-abet",["Elf-gebra","Toy-ography","Candy cane math"]],
+["Why is Santa so good at karate?","He has a black belt",["He eats his veggies","He practices on reindeer","He has magic mittens"]],
+["What do you get if you cross a snowman and a vampire?","Frostbite",["A cold fang","A snow bat","Ice-cula"]],
+["How does a snowman get to work?","By icicle",["On a snowmobile","By sled-way","On a cold bus"]],
+["What did the gingerbread man put on his bed?","A cookie sheet",["A candy blanket","Frosting pillows","Sprinkle sheets"]],
+["What do reindeer hang on their Christmas trees?","Horn-aments",["Hoof-balls","Antler-lights","Carrot-stars"]],
+["What kind of music do elves like best?","Wrap music",["Jingle jazz","Pop-corn","Hip-hop-ho-ho"]],
+["What do you call Santa when he takes a break?","Santa Pause",["Santa Snooze","Nap Claus","Lazy Claus"]],
+["Where do snowmen keep their money?","In a snow bank",["In a piggy freezer","Under the igloo","In an ice box"]],
+["What is a snowman’s favorite game?","Freeze tag",["Hide and sleet","Duck duck snow","Simon says brrr"]],
+["What do you call an old snowman?","Water",["Grandpa Frosty","Slush Senior","Mister Melty"]],
+["What does the Gingerbread Man use when he breaks his leg?","Icing",["A candy cane crutch","A gumdrop cast","Sprinkles"]]
 ]}
 ];

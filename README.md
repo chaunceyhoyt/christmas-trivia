@@ -1,14 +1,14 @@
 # Rewind Christmas Trivia
 
-A Christmas movie trivia night styled like a 1980s department store Christmas catalog. It has three screens:
+A Christmas movie trivia night styled like Grandma’s over-decorated living room. It has three screens:
 
 | Screen | Who uses it | Page |
 | --- | --- | --- |
-| Big screen | The laptop connected to the TV. It shows questions, keeps score and plays the alarms. | `screen.html` |
-| Player | Every guest's phone. They scan the QR code, pick a team name and tap answers. | `play.html` |
-| Host controller | Your phone. Moves through questions, reveals answers, sets off alarms and fixes scores. | `host.html` |
+| Big screen | The laptop connected to the TV. It shows questions, keeps score, runs the autopilot and plays the sounds. | `screen.html` |
+| Player | Every guest's phone. They scan the QR code, pick a name and a Christmas avatar (or snap their own face) and tap answers. | `play.html` |
+| Host controller | Your phone. Builds the round playlist, pauses, skips and fixes scores. | `host.html` |
 
-There are 293 questions in 20 rounds. The 12 feature rounds include an emoji round. The 8 alarm rounds are Rudolph, Grinch, Wet Bandits, Griswold, Snow Day, Turbo Time, Nightmare and Yippee-Ki-Yay. Each alarm round has a siren, flashing colors, emoji confetti, a house rule and a silly challenge.
+There are 395 questions in 28 rounds: 12 regular rounds, a 5-second speed round, Grandma’s Music Box (name the carol), 8 surprise rounds, 3 kid rounds, and 3 picture/sound/video rounds that use files you add.
 
 ## Put it on GitHub Pages (one time)
 
@@ -27,31 +27,32 @@ There are 293 questions in 20 rounds. The 12 feature rounds include an emoji rou
 
 1. On the TV laptop, open `https://YOUR-USERNAME.github.io/christmas-trivia/screen.html`. Click once anywhere to turn on sound, then press F11 for full screen.
 2. Click **Host controller** on the big screen and scan that QR code with **your** phone. It contains the host PIN, so close it before guests look.
-3. Guests scan the big QR code on the TV and pick team names. Each phone is one team.
-4. On your phone, tap **Open the catalog**, then **Play the next round** (or pick any round). The big red button sets off a random alarm round whenever you like.
-5. The big red **Next** button does the right thing at each step: start the round, reveal the answer, go to the next question, finish the round.
+3. Guests scan the big QR code on the TV, type a name and pick an avatar. Their ornament shows up on the TV.
+4. On your phone, tap rounds to add them to the **playlist** (or **Add all unplayed**), then tap **Start the show**.
+5. With **Autopilot** on, the game runs itself: round intro, reading time, 20-second timer, avatars land on their answers, reveal, next question, scoreboard, next round in the playlist. Go refill the eggnog. **Pause** freezes everything.
+6. With Autopilot off, the big red button moves things along (the timers still lock answers on their own).
 
-If the TV laptop reloads, the game picks up where it left off: same code, same scores. **New game** at the bottom of the big screen starts over with a new code.
+Turn on **Surprise rounds** and a surprise round sneaks in between playlist rounds now and then. **Kid mode** gives everything at least 30 seconds, shows the kid rounds first, and the kid rounds have silly “Jingle Jiggle” breaks.
 
-If you don't have the phone handy, the TV laptop's keyboard works too: Space is next, ← goes back, A sets off an alarm, S shows scores, L locks answers, T starts a 15-second timer and H shows the host QR.
+If the TV laptop reloads, the game picks up where it left off. **New game** at the bottom of the big screen starts over. Keyboard on the TV laptop: Space next, ← back, P pause, S scores, A surprise round, H host QR, M mute.
 
 ## Scoring
 
-- Each round's points are on its title card (1 to 3 per question).
-- **Rudolph:** a wrong answer costs 1 point.
-- **Grinch:** every right answer steals 1 point from whoever is in first place.
-- **Wet Bandits:** answers lock after 20 seconds.
-- **Turbo Time:** answers lock after 10 seconds. The fastest right answer gets +1.
-- **Griswold:** phones with a wrong answer tell that team to yell SQUIRREL.
-- **Nightmare:** the TV hides the question. It only shows on phones.
-- Use **+1 / −1** next to any team on the host controller for dares, ties or arguments.
+- Every question shows its toughness: **Gingerbread Easy** 100, **Tinsel Tricky** 200, **Fruitcake Tough** 300.
+- **Speed bonus:** answer instantly and you double it. It shrinks to nothing as the timer runs out.
+- **Snowball streak:** 3 right in a row adds +50, 4 adds +100, up to +250 a question. A miss melts it.
+- **Golden ornament:** one random question per round is worth double.
+- The Final Reel and Yippee-Ki-Yay are double points. Rudolph and Wet Bandits take points for wrong answers, the Grinch steals from the leader, Turbo Time gives the fastest right answer +200, Snow Day pays 25 just for answering. Kid rounds never take points away.
+- Use **−100 / +100** next to any player on the host controller for dares, ties or arguments.
 
-## Lights
+## Sounds, music, pictures and video
 
-See [LIGHTS.md](LIGHTS.md) to make your Google Home lights change color with each alarm.
+Every sound has a built-in stand-in. To use real Christmas sound effects and background music, drop MP3s into `assets/sounds/` with the names in [assets/sounds/README.md](assets/sounds/README.md).
+
+The Frame Game, Soundbites and Clip Show rounds need your own files in `assets/media/`. See [assets/media/README.md](assets/media/README.md) for the file names. Grandma’s Music Box needs nothing: the TV plays the carols itself.
 
 ## How it works
 
-The pages are static files. Live play goes through Supabase Realtime broadcast channels on your Supabase project. Nothing is written to its database. The connection settings are in `assets/config.js`. That key is the public "anon" key, which is designed to be visible in web pages. Your database tables are protected by row level security, not by keeping this key secret.
+The pages are static files. Live play goes through Supabase Realtime broadcast channels on your Supabase project. Nothing is written to its database. The connection settings are in `assets/config.js`. That key is the public "anon" key, which is designed to be visible in web pages. Your database tables are protected by row level security, not by keeping this key secret. Photo avatars are shrunk to a small circle on the phone and only kept on the big screen.
 
-To change questions, edit `assets/questions.js`. Each question is `[question, right answer, [three wrong answers], optional note]`.
+To change questions, edit `assets/questions.js`. Each question is `[question, right answer, [three wrong answers], optional note]`, and each round has a `tough` string with one digit (1–3) per question.
