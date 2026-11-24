@@ -28,7 +28,8 @@
       render();
     });
   }
-  function join() { if (ch && me.name && !editing) ch.send("join", { pid: me.pid, name: me.name, av: me.av, ph: me.photo ? me.ph : "" }); }
+  function join(again) { if (ch && me.name && !editing) ch.send("join", { pid: me.pid, name: me.name, av: me.av, ph: me.photo ? me.ph : "", again: !!again }); }
+  const removed = () => !!(S && S.kicked && S.kicked.includes(me.pid));
   setInterval(join, 15000);
   setInterval(() => { if (code && online && Date.now() - gotAt > 8000) ch.send("hello", { pid: me.pid }); render(); }, 4000);
 
@@ -44,7 +45,8 @@
       if (r) buzz(r.ok ? [80] : [250, 80, 250]);
     }
     const row = myRow();
-    if (inRoster() === false && me.name && !editing) join();
+    if (inRoster() === false && me.name && !editing && !removed()) join();
+    if (s.draw && pad && pad.sent && pad.seq === s.draw.seq && !s.draw.done.includes(me.pid) && Date.now() - pad.sentAt > 3000) sendDrawing();
     if (row && me.photo && row.ph !== me.ph && Date.now() - photoSentAt > 4000) { photoSentAt = Date.now(); ch.send("photo", { pid: me.pid, ph: me.ph, data: me.photo }); }
     render();
   }
@@ -165,16 +167,19 @@
     else if (!S) html = Date.now() - connectAt > 9000
       ? vWait("Can’t find that game", `Nothing is answering for code ${code}. Check the code on the big screen.`) + `<button class="btn big-btn" data-act="code">Enter a different code</button>`
       : vWait("Finding the big screen…", `Game ${code}`);
+    else if (removed()) html = vWait("You were taken out of the game", "No hard feelings! Tap below to hop back in.") + `<button class="btn red big-btn" data-act="again">Join again</button>`;
     else if (!inRoster()) html = vWait("Signing you in…", "Hang on a second.");
     else {
       switch (S.phase) {
         case "lobby": html = `<div class="card welcome">${myOrn("huge")}<h1>You’re in, ${esc(me.name)}!</h1><p>Look for your ornament on the big screen. The game starts soon.</p></div><p class="p-status">${S.players.length} on the nice list</p>`; break;
-        case "menu": html = scoreCard() + vWait(S.next && S.next[0] ? "Up next: " + S.next[0] : "Between rounds", waits[Math.floor(gotAt / 30000) % waits.length]); break;
+        case "menu": html = scoreCard() + vWait(S.hold ? "Intermission ☕" : S.next && S.next[0] ? "Up next: " + S.next[0] : "Between rounds", waits[Math.floor(gotAt / 30000) % waits.length]); break;
+        case "drawpick": html = vDrawPick(); break;
+        case "drawing": html = vDrawing(); break;
         case "intro": html = vIntro(); break;
         case "alarm": html = vWait(r.title, r.rule); over = vAlarm(); break;
         case "silly": html = vSilly(); break;
         case "ready": html = vReady(); break;
-        case "question": case "locked": case "reveal": html = vQuestion(); break;
+        case "question": case "locked": case "reveal": html = S.draw && S.draw.artist === me.pid ? vArtist() : vQuestion(); break;
         case "roundend": html = scoreCard() + vScores(); break;
         default: html = scoreCard();
       }
@@ -185,7 +190,7 @@
     put("#overlay", over);
     put("#foot", `<span>${online ? "● Online" : "○ Connecting"}</span>${code ? `<span>Game ${esc(code)}</span>` : ""}
       ${me.name && !editing ? `<button data-act="rename">Change name or face</button>` : ""}${code ? `<button data-act="code">Different game</button>` : ""}`);
-    timers();
+    timers(); attachPad();
     const f = $("#nameIn") || $("#codeIn");
     if (f && !f.value) f.focus();
   }
@@ -195,7 +200,7 @@
     if (!S) return;
     const el = $("#pTimer"), cane = $("#pCane"), rb = $("#readyBar");
     const since = Date.now() - gotAt;
-    if (S.phase === "question" && S.tLeft) {
+    if ((S.phase === "question" || S.phase === "drawing") && S.tLeft) {
       const left = S.paused ? S.tLeft : Math.max(0, S.tLeft - since);
       if (el) el.textContent = Math.ceil(left / 1000);
       if (cane && !cane.dataset.e) {
@@ -204,6 +209,7 @@
         cane.style.animationDelay = -((S.tLimit * 1000 - left) / 1000) + "s";
       }
       if (cane) cane.style.animationPlayState = S.paused ? "paused" : "running";
+      if (S.phase === "drawing" && pad && !pad.sent && left <= 300 && !S.paused) sendDrawing();
     }
     if (S.phase === "ready" && rb && !rb.dataset.e) {
       const left = Math.max(0, S.stepLeft - since);
@@ -214,6 +220,56 @@
     timers();
     if (S && S.phase === "alarm" && Date.now() - alarmSeenAt < 2600 && Date.now() - alarmSeenAt > 2200) render();
   }, 250);
+
+  /* ---------- Draw the Halls ---------- */
+  const myOpts = () => (S.draw && S.draw.opts && S.draw.opts[me.pid]) || null;
+  function vDrawPick() {
+    const o = myOpts(), mine = S.draw.picks[me.pid];
+    if (!o) return vWait("Draw the Halls", "You joined after the crayons came out. You’ll get to guess everyone’s drawings!");
+    return `<div class="card"><p class="label">DRAW THE HALLS</p><h1>Pick one to draw</h1><p>Keep it secret! Everyone else will try to guess it.</p></div>
+      <div class="p-choices">${o.map((t, i) => `<button class="p-ch c${i}${mine === i ? " picked" : ""}" data-dpick="${i}"><span class="letter">${"ABC"[i]}</span><span>${esc(t)}</span></button>`).join("")}</div>
+      ${mine >= 0 ? `<p class="p-status">Got it! Get your crayons ready…</p>` : ""}`;
+  }
+  function vDrawing() {
+    const o = myOpts(); if (!o) return vWait("Everybody’s drawing…", "Get ready to guess what they drew!");
+    const title = o[S.draw.picks[me.pid] >= 0 ? S.draw.picks[me.pid] : 0];
+    if (pad && pad.sent) return `<div class="card welcome"><h1>Sent to the fridge! ✓</h1><p>You drew <b>${esc(title)}</b>. Waiting for the others…</p></div>`;
+    return `<div class="card draw-head"><span class="label">DRAW THIS</span><h2>${esc(title)}</h2><span class="small">No letters or numbers!</span></div>
+      <div class="p-clock"><b id="pTimer"></b><div class="cane"><i id="pCane"></i></div></div>
+      <div class="draw-slot" id="dslot"></div>
+      <div class="palette">${PALETTE.map((c, i) => `<button class="sw${pad && pad.col === i ? " on" : ""}" data-col="${i}" style="--sw:${c}" aria-label="Color ${i + 1}"></button>`).join("")}</div>
+      <div class="tools">${BRUSH.map((b, i) => `<button class="sz${pad && pad.size === i ? " on" : ""}" data-size="${i}" aria-label="Brush ${i + 1}"><i style="width:${6 + i * 7}px;height:${6 + i * 7}px"></i></button>`).join("")}
+        <button class="btn" data-act="undo">Undo</button><button class="btn" data-act="clear">Clear</button><button class="btn red" data-act="drawDone">Done!</button></div>`;
+  }
+  function vArtist() {
+    const rev = S.phase === "reveal", x = rev && S.reveal.res ? S.reveal.res[me.pid] : null;
+    return `<div class="card welcome">${myOrn("big")}<h1>That’s your masterpiece!</h1>
+      ${rev ? `<p><b>${x && x.artist ? x.artist : 0}</b> ${x && x.artist === 1 ? "person" : "people"} guessed it. <b>+${x ? x.d : 0}</b></p>` : `<p>Sit back and look innocent while everyone guesses.</p>`}</div>`;
+  }
+  let pad = null;
+  function makePad() {
+    const cv = document.createElement("canvas"); cv.width = cv.height = 600; cv.className = "pad";
+    pad = { seq: S.draw.seq, cv, ctx: cv.getContext("2d"), strokes: [], cur: null, col: 1, size: 1, sent: false, sentAt: 0 };
+    redraw();
+    const pos = e => { const b = cv.getBoundingClientRect(); return [Math.round(((e.clientX - b.left) / b.width) * 1000), Math.round(((e.clientY - b.top) / b.height) * 1000)].map(v => Math.max(0, Math.min(1000, v))); };
+    cv.addEventListener("pointerdown", e => { e.preventDefault(); cv.setPointerCapture(e.pointerId); pad.cur = { c: pad.col, w: pad.size, p: pos(e) }; pad.strokes.push(pad.cur); redraw(); });
+    cv.addEventListener("pointermove", e => { if (!pad.cur) return; const [x, y] = pos(e), p = pad.cur.p; if (Math.abs(p[p.length - 2] - x) + Math.abs(p[p.length - 1] - y) < 6) return; p.push(x, y); redraw(); });
+    const end = () => { pad.cur = null; };
+    cv.addEventListener("pointerup", end); cv.addEventListener("pointercancel", end);
+  }
+  function redraw() { drawStrokes(pad.ctx, pad.strokes, 600, 1); }
+  function attachPad() {
+    const slot = $("#dslot");
+    if (!slot) return;
+    if (!pad || pad.seq !== S.draw.seq) makePad();
+    if (pad.cv.parentNode !== slot) slot.appendChild(pad.cv);
+  }
+  function sendDrawing() {
+    if (!pad || !ch) return;
+    pad.sent = true; pad.sentAt = Date.now();
+    ch.send("drawing", { pid: me.pid, seq: pad.seq, s: pad.strokes });
+    render();
+  }
 
   /* ---------- photo avatar: pick, drag and zoom inside a circle ---------- */
   let cropping = null;
@@ -293,6 +349,10 @@
       buzz([30]); render();
       return;
     }
+    const dp = e.target.closest("[data-dpick]");
+    if (dp && S && S.phase === "drawpick") { const i = +dp.dataset.dpick; S.draw.picks[me.pid] = i; ch.send("drawpick", { pid: me.pid, seq: S.draw.seq, i }); buzz([30]); last["#view"] = null; render(); return; }
+    const col = e.target.closest("[data-col]"), size = e.target.closest("[data-size]");
+    if (pad && (col || size)) { if (col) pad.col = +col.dataset.col; if (size) pad.size = +size.dataset.size; render(); return; }
     const av = e.target.closest("[data-av]");
     if (av) { keepName(); draftAv = av.dataset.av; draftPhoto = ""; render(); return; }
     const a = e.target.closest("[data-act]");
@@ -302,6 +362,10 @@
     if (k === "nophoto") { keepName(); draftPhoto = ""; render(); }
     if (k === "cropCancel") { cropping = null; last["#overlay"] = null; $("#overlay").innerHTML = ""; render(); }
     if (k === "cropOk") finishCrop();
+    if (k === "again") join(true);
+    if (k === "undo" && pad) { pad.strokes.pop(); redraw(); }
+    if (k === "clear" && pad) { pad.strokes = []; redraw(); }
+    if (k === "drawDone" && pad) sendDrawing();
     if (k === "code") { code = ""; S = null; if (ch) ch.close(); ch = null; history.replaceState(null, "", location.pathname); render(); }
   });
 

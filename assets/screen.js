@@ -5,7 +5,9 @@
   const $ = s => document.querySelector(s);
   const KEY = "xmas-screen-v2", PKEY = "xmas-photos-v2", LETTERS = "ABCD";
   /* How long the autopilot holds each screen (ms). */
-  const HOLD = { intro: 8000, alarm: 11000, land: 3200, reveal: 8000, note: 2500, roundend: 14000, menu: 6000, silly: 16000 };
+  const HOLD = { intro: 8000, alarm: 11000, land: 3200, reveal: 8000, note: 2500, roundend: 14000, silly: 16000, drawpick: 25000 };
+  /* Phases that always move on by themselves when their clock runs out, even with the autopilot off. */
+  const TIMED = ["ready", "question", "drawpick", "drawing"];
   const QPHASES = ["ready", "question", "locked", "reveal"];
 
   /* ---------- state ---------- */
@@ -15,7 +17,7 @@
       rid: null, order: [], qi: 0, phase: "lobby", choices: [], correct: -1, ans: {}, res: null, scored: {},
       tEnd: 0, tLimit: 20, qOpenAt: 0, readMs: 0, stepAt: 0, epoch: 0, golden: -1, silly: "",
       showScores: false, roundStart: {}, alarmAt: 0, queue: [], auto: true, surprise: false, kid: false,
-      paused: false, pausedAt: 0, lastKind: "" };
+      paused: false, pausedAt: 0, lastKind: "", hold: false, breakSec: 20, drawings: {}, drawSeq: 0 };
   }
   let G = null, photos = {};
   try { G = JSON.parse(localStorage.getItem(KEY) || "null"); } catch (e) {}
@@ -27,12 +29,19 @@
   save();
   const cur = () => (G.rid ? byId[G.rid] : null);
   const qIndex = () => G.order[G.qi];
-  const curQ = () => { const r = cur(); return r ? r.qs[qIndex()] : null; };
+  const curQ = () => {
+    const r = cur(); if (!r) return null;
+    if (r.kind !== "draw") return r.qs[qIndex()];
+    const pid = qIndex(), d = G.drawings[pid]; if (!d) return null;
+    const who = G.players[pid] ? G.players[pid].name : "Someone";
+    return [`What movie did ${who} draw?`, d.opts[d.pick], d.decoys, "", { draw: pid }];
+  };
+  const artistNow = () => { const r = cur(); return r && r.kind === "draw" ? qIndex() : ""; };
   const toughOf = (r, i) => +((r.tough || "")[i]) || 2;
   const timerFor = r => (G.kid ? Math.max(30, r.timer || 20) : r.timer || 20);
   const sorted = () => Object.entries(G.players).map(([id, p]) => ({ id, ...p })).sort((a, b) => b.score - a.score || a.at - b.at);
   const pl = id => { const p = G.players[id]; return p ? { id, av: p.av, photo: p.ph && photos[id] ? photos[id] : "" } : { id }; };
-  const active = () => Object.keys(G.players).filter(id => Date.now() - (G.players[id].seen || 0) < 45000);
+  const active = () => Object.keys(G.players).filter(id => Date.now() - (G.players[id].seen || 0) < 45000 && id !== artistNow());
 
   /* ---------- media availability ---------- */
   const mediaOk = {};
@@ -68,7 +77,7 @@
     if (main) main.close();
     if (host) host.close();
     const room = "xmas-" + G.code.toLowerCase();
-    main = Net.open(room, { join: onJoin, answer: onAnswer, photo: onPhoto, hello: p => { seen(p && p.pid); publish(); } },
+    main = Net.open(room, { join: onJoin, answer: onAnswer, photo: onPhoto, drawpick: onDrawPick, drawing: onDrawing, hello: p => { seen(p && p.pid); publish(); } },
       s => { netOk = s === "SUBSCRIBED"; if (netOk) publish(); renderFoot(); });
     host = Net.open(room + "-" + G.pin, { cmd: onCmd, hello: () => { hostSeen = Date.now(); renderFoot(); publish(); } }, s => { if (s === "SUBSCRIBED") publish(); });
   }
@@ -76,7 +85,9 @@
   function onJoin(p) {
     if (!p || typeof p.pid !== "string") return;
     const pid = p.pid.slice(0, 40), name = String(p.name || "").trim().slice(0, 24);
-    if (!name || G.kicked.includes(pid)) return;
+    if (!name) return;
+    /* A removed player can come back, but only by tapping "Join again" on their phone. */
+    if (G.kicked.includes(pid)) { if (!p.again) return; G.kicked = G.kicked.filter(x => x !== pid); }
     /* A photo avatar arrives separately ("photo" event); the join only says whether the player wants one. */
     const av = typeof p.av === "string" && p.av.length <= 12 ? p.av : "🎄", wantsPhoto = !!p.ph;
     const cur = G.players[pid];
@@ -98,8 +109,23 @@
     photos[p.pid] = p.data; G.players[p.pid].ph = String(p.ph || "").slice(0, 16);
     savePhotos(); save(); render(); publish();
   }
+  function onDrawPick(p) {
+    const d = p && G.drawings[p.pid];
+    if (!d || G.phase !== "drawpick" || p.seq !== G.drawSeq) return;
+    const i = p.i | 0; if (i < 0 || i > 2) return;
+    d.pick = i; seen(p.pid); lastAnsAt = Date.now(); save(); renderTray(); publish();
+  }
+  function onDrawing(p) {
+    const d = p && G.drawings[p.pid];
+    if (!d || p.seq !== G.drawSeq || !["drawing", "drawpick"].includes(G.phase) || !Array.isArray(p.s)) return;
+    let pts = 0;
+    const strokes = p.s.slice(0, 600).map(x => ({ c: Math.max(0, Math.min(PALETTE.length - 1, x.c | 0)), w: Math.max(0, Math.min(BRUSH.length - 1, x.w | 0)),
+      p: Array.isArray(x.p) ? x.p.slice(0, 4000).map(v => Math.max(0, Math.min(1000, v | 0))) : [] })).filter(x => x.p.length >= 2 && (pts += x.p.length) < 24000);
+    d.strokes = strokes; if (d.pick < 0) d.pick = 0;
+    seen(p.pid); save(); renderTray(); publish();
+  }
   function onAnswer(p) {
-    if (!p || !G.players[p.pid] || G.phase !== "question" || G.paused || p.epoch !== G.epoch) return;
+    if (!p || !G.players[p.pid] || G.phase !== "question" || G.paused || p.epoch !== G.epoch || p.pid === artistNow()) return;
     const c = p.c | 0;
     if (c < 0 || c >= G.choices.length) return;
     const had = G.ans[p.pid];
@@ -134,7 +160,8 @@
       case "mute": SFX.setMuted(!!m.on); break;
       case "music": SFX.setMusic(!!m.on); break;
       case "replay": replayMedia(); break;
-      case "menu": toMenu(); break;
+      case "menu": toMenu(); G.hold = true; G.stepAt = 0; break;
+      case "breakSec": G.breakSec = Math.max(5, Math.min(600, m.s | 0)); arm(true); break;
       case "lobby": stopMedia(); G.phase = "lobby"; G.rid = null; G.stepAt = 0; break;
       case "hello": break;
     }
@@ -157,19 +184,24 @@
       qi: G.qi, q: inQ ? q[0] : null, choices: inQ && G.phase !== "ready" ? G.choices : null,
       media: inQ ? (m.tune ? "tune" : m.audio ? "audio" : m.img ? "img" : m.video ? "video" : "") : "",
       tough: inQ ? toughOf(r, qIndex()) : 0, golden: inQ && G.qi === G.golden,
-      tLeft: G.phase === "question" && G.tEnd ? Math.max(0, G.tEnd - pausedNow) : 0, tLimit: G.tLimit,
+      tLeft: (G.phase === "question" || G.phase === "drawing") && G.tEnd ? Math.max(0, G.tEnd - pausedNow) : 0, tLimit: G.tLimit,
       stepLeft: G.stepAt ? Math.max(0, G.stepAt - pausedNow) : 0,
       answered: Object.keys(G.ans),
       players: sorted().map(p => ({ id: p.id, name: p.name, score: p.score, av: p.av, ph: p.ph || "", streak: p.streak || 0 })),
       reveal: G.phase === "reveal" ? { correct: G.correct, note: q[3] || "", res: G.res, counts } : null,
       silly: G.phase === "silly" ? G.silly : "",
+      kicked: G.kicked.slice(-60), hold: G.hold, breakSec: G.breakSec,
+      draw: r && r.kind === "draw" ? { seq: G.drawSeq, sec: drawSecs(r), artist: artistNow(),
+        opts: G.phase === "drawpick" || G.phase === "drawing" ? Object.fromEntries(Object.entries(G.drawings).map(([k, d]) => [k, d.opts])) : null,
+        picks: Object.fromEntries(Object.entries(G.drawings).map(([k, d]) => [k, d.pick])),
+        done: Object.keys(G.drawings).filter(k => G.drawings[k].strokes) } : null,
       next: G.queue.slice(0, 3).map(id => byId[id] ? byId[id].title : ""),
       alarmAge: G.phase === "alarm" && G.alarmAt ? now - G.alarmAt : 99999
     };
     main.send("state", s);
     host.send("hoststate", Object.assign({}, s, {
       secret: q ? { answer: G.correct >= 0 ? G.choices[G.correct] : q[1], correct: G.correct, note: q[3] || "", q: q[0], choices: G.choices, ans: G.ans } : null,
-      rounds: R.map(x => ({ id: x.id, title: x.title, kind: x.kind, n: playable(x).length, total: x.qs.length, played: G.played.includes(x.id),
+      rounds: R.map(x => ({ id: x.id, title: x.title, kind: x.kind, n: x.kind === "draw" ? 1 : playable(x).length, total: x.qs.length, played: G.played.includes(x.id),
         c1: x.c1 || "", timer: timerFor(x), extra: !!x.extra })),
       queue: G.queue.slice(), surprise: G.surprise, muted: SFX.muted, music: SFX.musicOn,
       hasMusic: SFX.has("music_lobby") || SFX.has("music_think")
@@ -192,8 +224,10 @@
   const defaultPool = () => R.filter(r => (G.kid ? r.kind === "kid" : r.kind === "feature" || r.kind === "media") && !r.extra && !G.played.includes(r.id) && playable(r).length);
   const surprisePool = () => R.filter(r => (G.kid ? r.kind === "kid" : r.kind === "alarm") && !G.played.includes(r.id) && !G.queue.includes(r.id));
 
+  const drawSecs = r => (G.kid ? Math.max(120, r.drawSec || 90) : r.drawSec || 90);
   function pick(id) {
     const r = byId[id]; if (!r) return;
+    if (r.kind === "draw") return startDraw(r);
     const order = playable(r); if (!order.length) return;
     stopMedia();
     G.rid = id; G.order = order; G.qi = 0; G.showScores = false; G.ans = {}; G.res = null; G.tEnd = 0;
@@ -206,6 +240,43 @@
     else { G.phase = "intro"; G.stepAt = Date.now() + HOLD.intro; SFX.play("round_intro"); }
   }
   let alarmT = 0;
+  /* Draw the Halls: everybody gets three movies, picks one and draws it. Then the drawings become questions. */
+  function startDraw(r) {
+    const ps = active().length ? active() : Object.keys(G.players);
+    if (!ps.length) return;
+    stopMedia();
+    let pool = shuffle(DRAW_PROMPTS.filter(x => !G.kid || x.kid).map(x => x.t));
+    const drawings = {};
+    ps.forEach(pid => {
+      if (pool.length < 3) pool = shuffle(DRAW_PROMPTS.map(x => x.t));
+      drawings[pid] = { opts: pool.splice(0, 3), pick: -1, strokes: null };
+    });
+    G.rid = r.id; G.order = []; G.qi = 0; G.golden = -1; G.ans = {}; G.res = null; G.tEnd = 0; G.showScores = false; G.hold = false;
+    G.drawings = drawings; G.drawSeq++;
+    G.queue = G.queue.filter(x => x !== r.id);
+    if (!G.played.includes(r.id)) G.played.push(r.id);
+    G.roundStart = Object.fromEntries(Object.entries(G.players).map(([k, p]) => [k, p.score]));
+    G.lastKind = r.kind;
+    G.phase = "drawpick"; G.stepAt = Date.now() + HOLD.drawpick; SFX.play("round_intro");
+  }
+  function startDrawing() {
+    const r = cur();
+    Object.values(G.drawings).forEach(d => { if (d.pick < 0) d.pick = Math.floor(Math.random() * 3); });
+    G.phase = "drawing"; G.tLimit = drawSecs(r); G.tEnd = Date.now() + G.tLimit * 1000; G.stepAt = G.tEnd + 4000; lastSec = -1;
+    SFX.play("question");
+  }
+  function startGuessing() {
+    const all = DRAW_PROMPTS.map(x => x.t);
+    Object.values(G.drawings).forEach(d => {
+      const others = d.opts.filter((_, i) => i !== d.pick);
+      const extra = shuffle(all.filter(t => !d.opts.includes(t)))[0];
+      d.decoys = [...others, extra];
+    });
+    G.order = shuffle(Object.keys(G.drawings).filter(k => G.drawings[k].strokes && G.drawings[k].strokes.length && G.players[k]));
+    G.qi = 0; G.tEnd = 0;
+    if (!G.order.length) return endRound();
+    openReady();
+  }
   function surpriseNow(id) {
     let r = id && byId[id];
     if (!r) { let pool = surprisePool(); if (!pool.length) pool = R.filter(x => x.kind === (G.kid ? "kid" : "alarm")); r = pool[Math.floor(Math.random() * pool.length)]; }
@@ -214,7 +285,7 @@
   function startFromQueue() {
     const pool = surprisePool();
     if (G.surprise && pool.length && G.lastKind !== "alarm" && Math.random() < 0.3) return pick(pool[Math.floor(Math.random() * pool.length)].id);
-    while (G.queue.length) { const id = G.queue[0]; if (byId[id] && playable(byId[id]).length) return pick(id); G.queue.shift(); }
+    while (G.queue.length) { const id = G.queue[0]; if (byId[id] && (byId[id].kind === "draw" || playable(byId[id]).length)) return pick(id); G.queue.shift(); }
     const f = defaultPool()[0]; if (f) pick(f.id);
   }
   function openReady() {
@@ -222,7 +293,7 @@
     Object.assign(G, makeChoices(r, q));
     G.ans = {}; G.res = null; G.phase = "ready"; G.epoch++; G.tEnd = 0;
     const m = q[4] || {}, words = String(q[0]).split(/\s+/).length;
-    G.readMs = m.tune || m.audio || m.video ? 1800 : Math.min(6500, Math.max(2500, 1200 + words * 230)) + (G.kid ? 1500 : 0);
+    G.readMs = m.draw ? 4500 : m.tune || m.audio || m.video ? 1800 : Math.min(6500, Math.max(2500, 1200 + words * 230)) + (G.kid ? 1500 : 0);
     G.stepAt = Date.now() + G.readMs;
     startMedia(q, true);
     SFX.play("question");
@@ -238,7 +309,7 @@
     SFX.play("timeup"); if (Object.keys(G.ans).length) SFX.play("land", 0.55);
   }
   function reveal() {
-    const r = cur(), qi = qIndex(), q = r.qs[qi], key = r.id + ":" + qi;
+    const r = cur(), qi = qIndex(), q = curQ(), key = r.id + ":" + (r.kind === "draw" ? G.drawSeq + ":" : "") + qi, artist = artistNow();
     const prev = G.scored[key];
     if (prev) {
       Object.entries(prev.d || {}).forEach(([pid, d]) => { if (G.players[pid]) G.players[pid].score -= d; });
@@ -249,6 +320,7 @@
     const res = {}, oldStreak = {};
     Object.entries(G.players).forEach(([pid, p]) => {
       oldStreak[pid] = p.streak || 0;
+      if (pid === artist) return;
       const a = G.ans[pid];
       if (!a) { p.streak = 0; return; }
       const ok = a.c === G.correct, x = { c: a.c, ok, d: 0 };
@@ -273,6 +345,10 @@
       loss = Math.min(loss, leader.score + ((res[leader.id] && res[leader.id].d) || 0));
       if (loss > 0) { res[leader.id] = res[leader.id] || { c: -1, ok: false, d: 0 }; res[leader.id].d -= loss; res[leader.id].robbed = loss; }
     }
+    if (artist && G.players[artist]) {
+      const fans = Object.values(res).filter(x => x.ok).length;
+      res[artist] = { c: -1, ok: false, d: fans * (r.artist || 100), artist: fans };
+    }
     const deltas = {};
     Object.entries(res).forEach(([pid, x]) => { if (r.kind === "kid") x.d = Math.max(0, x.d); G.players[pid].score += x.d; deltas[pid] = x.d; });
     G.scored[key] = { d: deltas, s: oldStreak }; G.res = res; G.phase = "reveal"; G.tEnd = 0;
@@ -290,8 +366,10 @@
   }
   function next() {
     switch (G.phase) {
-      case "lobby": case "menu": startFromQueue(); if (G.phase === "lobby") toMenu(); break;
+      case "lobby": case "menu": G.hold = false; startFromQueue(); if (G.phase === "lobby") toMenu(); break;
       case "intro": case "alarm": case "silly": openReady(); break;
+      case "drawpick": startDrawing(); break;
+      case "drawing": startGuessing(); break;
       case "ready": openQuestion(); break;
       case "question": lock(); break;
       case "locked": reveal(); break;
@@ -301,13 +379,15 @@
   }
   function prev() {
     const r = cur(); if (!r) { if (G.phase === "menu") { G.phase = "lobby"; G.stepAt = 0; } return; }
-    if (QPHASES.includes(G.phase)) {
+    if (QPHASES.includes(G.phase) && r.kind === "draw" && G.qi === 0 && (G.phase === "ready" || G.phase === "question")) { stopMedia(); startDrawing(); }
+    else if (QPHASES.includes(G.phase)) {
       if (G.phase !== "ready" && G.phase !== "question") openReady();
       else if (G.qi > 0) { G.qi--; openReady(); }
       else { stopMedia(); G.phase = r.kind === "alarm" ? "alarm" : "intro"; G.alarmAt = 0; G.tEnd = 0; G.stepAt = Date.now() + HOLD.intro; }
     } else if (G.phase === "silly") openReady();
     else if (G.phase === "roundend") { G.qi = G.order.length - 1; openReady(); }
-    else if (G.phase === "intro" || G.phase === "alarm") toMenu();
+    else if (G.phase === "intro" || G.phase === "alarm" || G.phase === "drawpick") toMenu();
+    else if (G.phase === "drawing") { G.phase = "drawpick"; G.tEnd = 0; G.stepAt = Date.now() + HOLD.drawpick; }
   }
   function endRound() {
     stopMedia();
@@ -316,9 +396,9 @@
   }
   function toMenu() { stopMedia(); G.phase = "menu"; G.rid = null; G.showScores = false; G.tEnd = 0; G.stepAt = 0; arm(); }
   /* In the menu, the autopilot starts the next round on its own when something is queued. */
-  function arm() {
+  function arm(reset) {
     if (G.phase !== "menu") return;
-    if (G.auto && G.queue.length) { if (!G.stepAt) G.stepAt = Date.now() + HOLD.menu; }
+    if (G.auto && G.queue.length && !G.hold) { if (!G.stepAt || reset) G.stepAt = Date.now() + G.breakSec * 1000; }
     else G.stepAt = 0;
   }
   function setPaused(on) {
@@ -343,7 +423,13 @@
     stopMedia();
     const m = q && q[4]; if (!m) return;
     media.epoch = G.epoch;
-    if (m.tune) { media.kind = "tune"; if (play) SFX.tune(m.tune, m.bpm || 120); }
+    if (m.draw) {
+      const d = G.drawings[m.draw], cv = document.createElement("canvas"); cv.width = cv.height = 720; cv.className = "media-draw";
+      const ctx = cv.getContext("2d"), t0 = performance.now(), len = play ? 3800 : 0;
+      const step = () => { const k = len ? Math.min(1, (performance.now() - t0) / len) : 1; drawStrokes(ctx, (d && d.strokes) || [], 720, k); if (k < 1 && media.el === cv) requestAnimationFrame(step); };
+      media.el = cv; media.kind = "draw"; step();
+    }
+    else if (m.tune) { media.kind = "tune"; if (play) SFX.tune(m.tune, m.bpm || 120); }
     else if (m.img) { const im = new Image(); im.src = m.img; im.alt = ""; im.className = "media-img fx-" + (m.fx || "none"); media.el = im; media.kind = "img"; }
     else if (m.audio) { const a = new Audio(m.audio); a.muted = SFX.muted; if (play) a.play().catch(() => {}); media.audio = a; media.kind = "audio"; }
     else if (m.video) {
@@ -364,6 +450,7 @@
     if (m.tune) SFX.tune(m.tune, m.bpm || 120);
     else if (media.audio) { media.audio.currentTime = 0; media.audio.play().catch(() => {}); }
     else if (media.el && media.el.play) { media.el.currentTime = m.start || 0; media.el.play().catch(() => {}); }
+    else if (m.draw) startMedia(q, true);
   }
   /* Put the media element into its slot. The same element is reused across re-renders so video keeps playing. */
   function attachMedia() {
@@ -395,13 +482,20 @@
       const act = active();
       if (act.length && act.every(id => G.ans[id]) && now - lastAnsAt > 900) { lock(); save(); render(); publish(); return; }
     }
-    if (G.stepAt && now >= G.stepAt && (G.auto || G.phase === "ready" || G.phase === "question")) { next(); save(); render(); publish(); }
+    if (G.phase === "drawing" && G.tEnd) {
+      const s = Math.max(0, Math.ceil((G.tEnd - now) / 1000));
+      if (s !== lastSec) { lastSec = s; if (s <= 5 && s > 0) SFX.play("tick"); const el = $("#timer"); if (el) el.textContent = s; }
+    }
+    const ds = Object.keys(G.drawings), drawWho = ds.filter(k => active().includes(k) || G.drawings[k].strokes);
+    if (G.phase === "drawpick" && drawWho.length && drawWho.every(k => G.drawings[k].pick >= 0) && now - lastAnsAt > 1500) { lastAnsAt = now; next(); save(); render(); publish(); return; }
+    if (G.phase === "drawing" && drawWho.length && drawWho.every(k => G.drawings[k].strokes)) { next(); save(); render(); publish(); return; }
+    if (G.stepAt && now >= G.stepAt && (G.auto || TIMED.includes(G.phase))) { next(); save(); render(); publish(); }
   }, 200);
   function music() {
     const ph = G.phase, busy = media.kind === "tune" || media.kind === "audio" || media.kind === "video";
     let want = "";
     if (G.paused || ["lobby", "menu", "roundend", "intro"].includes(ph)) want = "music_lobby";
-    else if (QPHASES.includes(ph) && !busy) want = "music_think";
+    else if ((QPHASES.includes(ph) && !busy) || ph === "drawpick" || ph === "drawing") want = "music_think";
     SFX.music(want);
   }
 
@@ -426,7 +520,7 @@
     const pos = s => (Math.max(0, s) / top) * 100;
     const lanes = ps.map((p, i) => {
       const from = withDelta ? G.roundStart[p.id] ?? 0 : p.score, d = p.score - from;
-      return `<li class="lane${i === 0 && p.score > 0 ? " lead" : ""}"><span class="rk">${i + 1}</span>
+      return `<li class="lane${i === 0 && p.score > 0 ? " top" : ""}"><span class="rk">${i + 1}</span>
         <span class="track"><span class="sled" style="--from:${pos(from).toFixed(1)};--to:${pos(p.score).toFixed(1)}">${ornament(pl(p.id))}<span class="sleigh">🛷</span></span></span>
         <span class="nm">${esc(p.name)}${p.streak >= 3 ? ` <i class="hot">❄️${p.streak}</i>` : ""}</span>
         ${withDelta ? `<span class="delta${d < 0 ? " neg" : ""}">${d > 0 ? "+" : ""}${d}</span>` : ""}<span class="sc">${p.score}</span></li>`;
@@ -446,14 +540,49 @@
         <div class="lobby-actions"><button class="btn red" data-k="next">Start the show ▶</button><button class="btn" data-k="hostqr">Host controller</button></div>
       </div></section>`;
   }
+  /* A cozy brick fireplace. Drop assets/media/fireplace.mp4 in to show your own crackling-fire video instead. */
+  function fireplace() {
+    return `<div class="hearth"><div class="mantel"><span class="clock-orn">🕰️</span><span class="candle">🕯️</span><span class="candle">🕯️</span></div>
+      <div class="stockings">${["🧦", "🧦", "🧦", "🧦", "🧦"].map((x, i) => `<span style="animation-delay:-${i * 0.7}s">${x}</span>`).join("")}</div>
+      <div class="firebox">${fireOk ? `<video src="assets/media/fireplace.mp4" autoplay muted loop playsinline></video>`
+        : `<div class="glow"></div><div class="flames">${"<i></i>".repeat(7)}</div><div class="logs"><i></i><i></i></div>`}</div></div>`;
+  }
   function vMenu() {
     const q = G.queue.map(id => byId[id]).filter(Boolean);
+    const status = G.hold ? "Taking a break. The host will start the next round." : !q.length ? "The host is picking the next round…" : !G.auto ? "Waiting for the host to start it." : "";
     return `<section class="menu">
-      <div class="marquee doily"><p class="label">COMING UP NEXT</p>
-        ${q.length ? `<ol class="upnext">${q.slice(0, 6).map((r, i) => `<li${i === 0 ? ' class="first"' : ""}><b>${esc(r.title)}</b><span>${esc(r.sub || "")}</span></li>`).join("")}</ol>`
-          : `<p class="waiting">The host is picking the next round…</p>`}
-        ${G.surprise ? `<p class="hint">Careful: a surprise round could sneak in at any time.</p>` : ""}</div>
+      <div class="cozy">${fireplace()}
+        <div class="marquee doily"><p class="label">${G.hold ? "INTERMISSION" : "COMING UP NEXT"}</p>
+          ${q.length ? `<ol class="upnext">${q.slice(0, 3).map((r, i) => `<li${i === 0 ? ' class="first"' : ""}><b>${esc(r.title)}</b><span>${esc(r.sub || "")}</span></li>`).join("")}</ol>` : ""}
+          ${status ? `<p class="waiting">${status}</p>` : ""}
+          ${G.surprise && !G.hold ? `<p class="hint">Careful: a surprise round could sneak in at any time.</p>` : ""}</div></div>
       ${race("The Sleigh Race", false)}</section>`;
+  }
+  function vDrawPick() {
+    const r = cur();
+    return `<section class="intro draw"><div class="rain">${emojiRain(r.emoji, 16)}</div><p class="label">DRAW THE HALLS</p><h1>Check your phone!</h1>
+      <p class="script sub">Pick one of your three movies. Keep it secret!</p><p class="rule doily">${esc(r.rule)}</p>
+      <div class="chips"><span>🖍️ ${drawSecs(r)} seconds to draw</span><span>🚫 No letters or numbers</span><span>🎨 Then everyone guesses</span></div></section>`;
+  }
+  function vDrawing() {
+    const now = G.paused ? G.pausedAt : Date.now();
+    return `<section class="intro draw drawing"><p class="label">DRAW THE HALLS</p><h1>Everybody’s drawing…</h1>
+      <div class="crayons"><span>🖍️</span><span>✏️</span><span>🎨</span><span>🖌️</span></div>
+      <div class="clock"><span class="cap"></span><b id="timer">${Math.max(0, Math.ceil((G.tEnd - now) / 1000))}</b><small>seconds</small></div>
+      <p class="script sub">No peeking at your neighbor’s phone!</p></section>`;
+  }
+  const artCache = {};
+  function artUrl(pid) {
+    const k = G.drawSeq + ":" + pid; if (artCache[k]) return artCache[k];
+    const d = G.drawings[pid]; if (!d || !d.strokes) return "";
+    const cv = document.createElement("canvas"); cv.width = cv.height = 360; drawStrokes(cv.getContext("2d"), d.strokes, 360, 1);
+    return (artCache[k] = cv.toDataURL("image/png"));
+  }
+  function vFridge() {
+    const items = G.order.filter(pid => G.drawings[pid] && G.players[pid]);
+    return `<section class="fridge-wrap"><div class="fridge-head"><p class="label">THAT’S A WRAP ON DRAW THE HALLS</p><h1>Grandma’s Fridge</h1></div>
+      <div class="fridge">${items.map((pid, i) => { const d = G.drawings[pid]; return `<figure class="art" style="--tilt:${((i * 37) % 9) - 4}deg">
+        <span class="magnet m${i % 4}"></span><img src="${artUrl(pid)}" alt=""><figcaption><b>${esc(d.opts[d.pick])}</b>by ${esc(G.players[pid].name)}</figcaption></figure>`; }).join("")}</div></section>`;
   }
   function chips(r) {
     return `<div class="chips"><span>⏱ ${timerFor(r)} seconds a question</span><span>🎁 ${G.order.length} questions</span><span>⚡ Faster answers score more</span>${r.mult > 1 ? "<span>✨ Double points</span>" : ""}</div>`;
@@ -541,6 +670,7 @@
   }
   function vRoundEnd() {
     const r = cur();
+    if (r.kind === "draw") return vFridge();
     return `<section class="roundend"><div class="wrap"><p class="label">THAT’S A WRAP ON</p><h1>${esc(r.title)}</h1>
       <p class="script">${G.queue.length ? "Next up: " + esc(byId[G.queue[0]] ? byId[G.queue[0]].title : "") : "Stretch your legs, refill the eggnog!"}</p></div>${race("The Sleigh Race", true)}</section>`;
   }
@@ -567,8 +697,12 @@
     return html;
   }
   function trayHtml() {
+    if (G.phase === "drawpick" || G.phase === "drawing") {
+      return sorted().filter(p => G.drawings[p.id]).map(p => { const d = G.drawings[p.id], ok = G.phase === "drawpick" ? d.pick >= 0 : !!d.strokes;
+        return `<span class="t-item${ok ? " in" : ""}">${ornament(pl(p.id))}<span>${esc(p.name)}</span></span>`; }).join("");
+    }
     if (!["ready", "question"].includes(G.phase)) return "";
-    const ps = sorted();
+    const ps = sorted().filter(p => p.id !== artistNow());
     return ps.map(p => `<span class="t-item${G.ans[p.id] ? " in" : ""}">${ornament(pl(p.id))}<span>${esc(p.name)}</span></span>`).join("");
   }
   let showHostQr = false, resetArmed = false, resetT = 0, soundOn = false;
@@ -582,7 +716,9 @@
     const el = $("#chip"); if (!el) return;
     let t = "";
     if (G.paused) t = "⏸ Paused";
-    else if (G.stepAt && G.auto && !["ready", "question"].includes(G.phase)) { const s = Math.ceil((G.stepAt - Date.now()) / 1000); if (s > 0) t = `▶ Autopilot · next in ${s}`; }
+    else if (G.phase === "menu" && G.hold) t = "☕ Intermission";
+    else if (G.phase === "drawpick" && G.stepAt) { const s = Math.ceil((G.stepAt - Date.now()) / 1000); if (s > 0) t = `Pick your movie · ${s}`; }
+    else if (G.stepAt && G.auto && !TIMED.includes(G.phase)) { const s = Math.ceil((G.stepAt - Date.now()) / 1000); if (s > 0) t = `▶ ${G.phase === "menu" ? "Next round" : "Autopilot · next"} in ${s >= 60 ? Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0") : s}`; }
     else if (!G.auto && ["locked", "reveal", "intro", "alarm", "silly", "roundend"].includes(G.phase)) t = "Waiting for the host";
     if (el.textContent !== t) { el.textContent = t; el.hidden = !t; }
   }
@@ -601,7 +737,7 @@
     theme();
     put("#mast", mast());
     const r = cur();
-    const v = { lobby: vLobby, menu: vMenu, intro: vIntro, alarm: vIntro, silly: vSilly, ready: vReady, question: vQuestion, locked: vQuestion, reveal: vQuestion, roundend: vRoundEnd }[G.phase] || vLobby;
+    const v = { lobby: vLobby, menu: vMenu, intro: vIntro, alarm: vIntro, silly: vSilly, ready: vReady, question: vQuestion, locked: vQuestion, reveal: vQuestion, roundend: vRoundEnd, drawpick: vDrawPick, drawing: vDrawing }[G.phase] || vLobby;
     put("#stage", r || G.phase === "lobby" || G.phase === "menu" ? v() : vLobby());
     attachMedia();
     renderTray();
@@ -646,5 +782,7 @@
   $("#lightsTop").innerHTML = stringLights(28);
   connect();
   probeMedia();
+  let fireOk = false;
+  { const v = document.createElement("video"); v.preload = "metadata"; v.onloadedmetadata = () => { fireOk = true; render(); }; v.src = "assets/media/fireplace.mp4"; }
   render();
 })();

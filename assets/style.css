@@ -218,7 +218,7 @@ h1, h2 { text-wrap: balance; }
 .race ol { list-style: none; margin: 0; padding: 0; display: grid; gap: .7vh; }
 .lane { display: grid; grid-template-columns: 2em minmax(0, 1fr) minmax(0, 11vw) auto 4.5em; align-items: center; gap: .8vw; font-size: clamp(.85rem, 1.25vw, 1.4rem); font-weight: 800; }
 .lane .rk { font-family: var(--display); color: var(--ink2); text-align: center; }
-.lane.lead .rk { color: var(--gold2); }
+.lane.top .rk { color: var(--gold2); }
 .lane .track { position: relative; height: clamp(2rem, 3.4vw, 3.8rem); border-radius: 999px; background: linear-gradient(#ffffff, #dfeaf6); box-shadow: inset 0 -3px 0 #c7d6e8, inset 0 0 0 2px #e6eef8; }
 .lane .track::after { content: ""; position: absolute; right: 1.2em; top: 10%; bottom: 10%; width: 6px; background: repeating-linear-gradient(0deg, #222 0 5px, #fff 5px 10px); opacity: .5; }
 .sled { position: absolute; top: 50%; transform: translateY(-50%); display: flex; align-items: center; left: calc((100% - 4.2em) * var(--to) / 100); animation: sled 2.6s cubic-bezier(.3, .1, .2, 1) both .4s; }
@@ -556,3 +556,88 @@ h1, h2 { text-wrap: balance; }
 .lights-top .lights { height: 24px; }
 .phone .lights { height: 16px; }
 .phone .lights i { min-height: 12px; min-width: 8px; }
+
+/* ---------- Intermission: the fireplace ---------- */
+.menu .cozy { display: grid; gap: 3vh; align-content: start; min-height: 0; }
+.hearth { position: relative; display: grid; justify-items: center; }
+.hearth .mantel {
+  width: 100%; height: 4.2vh; border-radius: 6px 6px 2px 2px; position: relative; z-index: 2; display: flex; justify-content: space-between; align-items: flex-end; padding: 0 2vw;
+  background: linear-gradient(#8c5a32, #5e3a1d); box-shadow: 0 6px 10px rgba(0, 0, 0, .45), inset 0 3px 0 rgba(255, 255, 255, .15);
+}
+.hearth .mantel span { font-size: clamp(1.4rem, 2.6vw, 3rem); transform: translateY(-55%); }
+.hearth .mantel .candle { animation: twinkle 1.6s ease-in-out infinite alternate; --c: #ffb347; }
+.stockings { position: absolute; top: 3.6vh; left: 0; right: 0; display: flex; justify-content: space-around; z-index: 3; pointer-events: none; }
+.stockings span { font-size: clamp(1.8rem, 3.4vw, 3.8rem); transform-origin: 50% 0; animation: swing 3.2s ease-in-out infinite alternate; filter: drop-shadow(0 4px 3px rgba(0, 0, 0, .4)); }
+.firebox {
+  width: 88%; aspect-ratio: 16 / 8; position: relative; overflow: hidden; border-radius: 46% 46% 4px 4px / 30% 30% 4px 4px;
+  border: 1.4vw solid transparent; border-image: none;
+  background: radial-gradient(ellipse at 50% 100%, #3a1408 0, #120604 70%);
+  box-shadow: 0 0 0 1.4vw #8f3f2a, 0 0 0 calc(1.4vw + 4px) #5a2416, inset 0 0 40px #000, 0 0 70px rgba(255, 140, 40, .35);
+}
+.hearth { padding: 0 1.6vw 1.4vw; background:
+  linear-gradient(#4b1d12 0 2px, transparent 2px) 0 0 / 54px 24px,
+  linear-gradient(90deg, #4b1d12 0 2px, transparent 2px) 0 0 / 54px 48px,
+  linear-gradient(90deg, #4b1d12 0 2px, transparent 2px) 27px 24px / 54px 48px,
+  #9a4630; border-radius: 6px; box-shadow: 0 14px 30px rgba(0, 0, 0, .45); }
+.hearth .mantel { margin: 0 -1.6vw 2.6vh; width: calc(100% + 3.2vw); }
+.firebox video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.firebox .glow { position: absolute; inset: 0; background: radial-gradient(ellipse 60% 55% at 50% 95%, rgba(255, 150, 40, .7), transparent 70%); animation: flick 1.3s ease-in-out infinite alternate; }
+.firebox .flames { position: absolute; left: 22%; right: 22%; bottom: 14%; height: 70%; }
+.firebox .flames i {
+  position: absolute; bottom: 0; width: 26%; height: 70%; border-radius: 50% 50% 35% 35% / 65% 65% 35% 35%;
+  background: radial-gradient(ellipse at 50% 85%, #fff6c0 0 12%, #ffd23a 25%, #ff8a1c 50%, rgba(220, 50, 20, .6) 72%, transparent 80%);
+  filter: blur(2px); mix-blend-mode: screen; transform-origin: 50% 100%; animation: flame 1.1s ease-in-out infinite alternate;
+}
+.firebox .flames i:nth-child(1) { left: 0; height: 52%; animation-delay: -.3s; }
+.firebox .flames i:nth-child(2) { left: 14%; height: 80%; animation-delay: -.7s; }
+.firebox .flames i:nth-child(3) { left: 30%; height: 100%; animation-delay: -.1s; }
+.firebox .flames i:nth-child(4) { left: 46%; height: 86%; animation-delay: -.5s; }
+.firebox .flames i:nth-child(5) { left: 62%; height: 64%; animation-delay: -.9s; }
+.firebox .flames i:nth-child(6) { left: 74%; height: 48%; animation-delay: -.2s; }
+.firebox .flames i:nth-child(7) { left: 38%; height: 60%; width: 22%; animation-delay: -.6s; animation-duration: .8s; }
+@keyframes flame { 0% { transform: scale(1, 1) skewX(0); } 50% { transform: scale(.92, 1.08) skewX(4deg); } 100% { transform: scale(1.05, .9) skewX(-5deg); } }
+@keyframes flick { from { opacity: .75; } to { opacity: 1; } }
+.firebox .logs { position: absolute; left: 20%; right: 20%; bottom: 6%; height: 16%; }
+.firebox .logs i { position: absolute; left: 0; right: 0; height: 55%; border-radius: 999px; background: linear-gradient(#7a4a26, #3e220f); box-shadow: inset 0 -4px 6px rgba(0, 0, 0, .5); }
+.firebox .logs i:first-child { bottom: 0; transform: rotate(6deg); } .firebox .logs i:last-child { bottom: 30%; transform: rotate(-7deg); left: 8%; right: 8%; }
+
+/* ---------- Draw the Halls ---------- */
+.intro.drawing .clock { margin-top: 0; }
+.crayons { display: flex; gap: 2vw; font-size: clamp(2.4rem, 5vw, 5.6rem); }
+.crayons span { animation: jiggle .5s ease-in-out infinite alternate; }
+.crayons span:nth-child(2n) { animation-delay: -.25s; }
+.media-draw { width: auto; height: 46vh; aspect-ratio: 1; border: .8vw solid #fff; border-radius: 6px; box-shadow: 0 0 0 4px var(--gold), 0 14px 30px rgba(0, 0, 0, .45); background: #fffdf6; transform: rotate(-1.5deg); }
+.listing .media-draw { height: 30vh; }
+.fridge-wrap { height: 100%; display: grid; grid-template-rows: auto minmax(0, 1fr); gap: 2vh; }
+.fridge-head h1 { font-family: var(--display); font-weight: 400; font-size: clamp(2.2rem, 4.4vw, 5rem); margin: .3vh 0 0; text-shadow: 4px 4px 0 var(--cran2), 8px 8px 0 rgba(0, 0, 0, .3); }
+.fridge {
+  border-radius: 22px; padding: 2.6vh 2vw; display: flex; flex-wrap: wrap; gap: 2.4vh 2vw; align-content: flex-start; justify-content: center; overflow: hidden;
+  background: linear-gradient(90deg, #e9efe6, #fbfdf8 40%, #dfe7dc); box-shadow: inset -10px 0 0 #c9d3c5, 0 14px 30px rgba(0, 0, 0, .45);
+}
+.art { margin: 0; background: #fff; padding: .6vw .6vw 1vw; box-shadow: 0 6px 12px rgba(0, 0, 0, .25); transform: rotate(var(--tilt)); position: relative; width: clamp(9rem, 15vw, 17rem); animation: pop .5s both; }
+.art img { width: 100%; display: block; }
+.art figcaption { color: var(--ink); text-align: center; font-weight: 700; font-size: clamp(.7rem, .95vw, 1.05rem); line-height: 1.2; margin-top: .5vh; }
+.art figcaption b { display: block; font-family: var(--fancy); font-size: 1.35em; color: var(--cran); }
+.magnet { position: absolute; top: -.7vw; left: 50%; width: 2vw; height: 2vw; margin-left: -1vw; border-radius: 50%; background: #e8283c; box-shadow: 0 3px 4px rgba(0, 0, 0, .35), inset -3px -3px 0 rgba(0, 0, 0, .2); }
+.magnet.m1 { background: #1f7a4e; } .magnet.m2 { background: #e0a020; } .magnet.m3 { background: #45a6e6; }
+
+/* phone drawing pad */
+.draw-head { display: grid; gap: 2px; text-align: center; padding: 10px 14px; }
+.draw-head h2 { color: var(--cran) !important; font-size: 1.5rem !important; margin: 0 !important; }
+.draw-slot { display: grid; place-items: center; }
+.pad { width: 100%; max-width: 460px; aspect-ratio: 1; border-radius: 10px; background: #fffdf6; touch-action: none; box-shadow: 0 0 0 4px var(--gold), 0 8px 18px rgba(0, 0, 0, .35); }
+.palette { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; }
+.sw { width: 36px; height: 36px; border-radius: 50%; border: 3px solid rgba(255, 255, 255, .8); background: var(--sw); padding: 0; }
+.sw.on { box-shadow: 0 0 0 3px var(--gold); transform: scale(1.12); }
+.tools { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; align-items: center; }
+.tools .btn { padding: .5em .9em; font-size: .95rem; }
+.sz { width: 40px; height: 40px; border-radius: 50%; border: 0; background: var(--cream); display: grid; place-items: center; padding: 0; }
+.sz i { background: var(--ink); border-radius: 50%; display: block; }
+.sz.on { box-shadow: 0 0 0 3px var(--gold); }
+.seg { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.seg button { border: 0; background: var(--cream2); color: var(--ink); border-radius: 999px; padding: 6px 12px; font-weight: 900; }
+.seg button.on { background: var(--pine); color: #fff; }
+.lane.top { background: rgba(220, 170, 69, .22); border-radius: 999px; }
+.intro.drawing { gap: 1.2vh; }
+.intro.drawing h1 { font-size: clamp(2.4rem, 5.5vw, 6rem); }
+.intro.drawing .crayons { font-size: clamp(2rem, 3.6vw, 4rem); }

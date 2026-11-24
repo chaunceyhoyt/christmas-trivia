@@ -58,3 +58,23 @@ window.toughMeter = (t, mult) => {
 
 /* A row of twinkling Christmas lights on a wire. */
 window.stringLights = n => `<div class="lights" aria-hidden="true">${Array.from({ length: n }, (_, i) => `<i style="animation-delay:-${((i * 0.37) % 2.4).toFixed(2)}s"></i>`).join("")}</div>`;
+
+/* Drawings are lists of strokes: {c: color index, w: size index, p: [x, y, x, y, ...]} in a 0–1000 square. */
+window.PALETTE = ["#2b1d14", "#c9283f", "#1f7a4e", "#e0a020", "#8a5a2b", "#45a6e6", "#e86ab8", "#ffffff"];
+window.BRUSH = [8, 18, 40];
+/* Draw strokes onto a canvas of size W. progress (0–1) draws only that share of the points, for the replay. */
+window.drawStrokes = (ctx, strokes, W, progress = 1) => {
+  ctx.fillStyle = "#fffdf6"; ctx.fillRect(0, 0, W, W);
+  const k = W / 1000, total = strokes.reduce((n, s) => n + s.p.length / 2, 0);
+  let budget = Math.floor(total * progress);
+  ctx.lineCap = "round"; ctx.lineJoin = "round";
+  for (const s of strokes) {
+    if (budget <= 0) break;
+    const n = Math.min(s.p.length / 2, budget); budget -= n;
+    ctx.strokeStyle = PALETTE[s.c] || PALETTE[0]; ctx.fillStyle = ctx.strokeStyle; ctx.lineWidth = (BRUSH[s.w] || BRUSH[1]) * k;
+    if (n === 1) { ctx.beginPath(); ctx.arc(s.p[0] * k, s.p[1] * k, ctx.lineWidth / 2, 0, 7); ctx.fill(); continue; }
+    ctx.beginPath(); ctx.moveTo(s.p[0] * k, s.p[1] * k);
+    for (let i = 1; i < n; i++) ctx.lineTo(s.p[i * 2] * k, s.p[i * 2 + 1] * k);
+    ctx.stroke();
+  }
+};

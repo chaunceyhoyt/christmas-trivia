@@ -20,9 +20,9 @@
     if (!H) return "Next";
     const last = H.round && H.qi + 1 >= H.round.n;
     return { lobby: "Start the show", menu: H.queue.length ? "Start the next round now" : "Play the next round", intro: "First question", alarm: "First question", silly: "Next question",
-      ready: "Open answers now", question: "Lock answers now", locked: "Reveal the answer", reveal: last ? "Finish the round" : "Next question", roundend: "Back to intermission" }[H.phase] || "Next";
+      ready: "Open answers now", drawpick: "Start drawing now", drawing: "Done drawing, start guessing", question: "Lock answers now", locked: "Reveal the answer", reveal: last ? "Finish the round" : "Next question", roundend: "Back to intermission" }[H.phase] || "Next";
   };
-  const phaseName = p => ({ lobby: "Lobby", menu: "Intermission", intro: "Round intro", alarm: "SURPRISE!", silly: "Jingle Jiggle", ready: "Reading time", question: "Answers open", locked: "Avatars landing", reveal: "Answer revealed", roundend: "Round over" }[p] || p);
+  const phaseName = p => ({ lobby: "Lobby", menu: "Intermission", intro: "Round intro", alarm: "SURPRISE!", silly: "Jingle Jiggle", ready: "Reading time", drawpick: "Picking movies", drawing: "Drawing", question: "Answers open", locked: "Avatars landing", reveal: "Answer revealed", roundend: "Round over" }[p] || p);
   const left = ms => Math.max(0, Math.ceil((ms - (H && !H.paused ? Date.now() - gotAt : 0)) / 1000));
 
   function renderHead() {
@@ -39,6 +39,9 @@
     if (H.paused) return "⏸ Paused. Nothing moves until you resume.";
     if (H.phase === "question") return `Answers open · ${left(H.tLeft)}s left`;
     if (H.phase === "ready") return "Players are reading the question…";
+    if (H.phase === "drawpick") return `Players are picking their movie · ${H.draw ? H.draw.done.length : 0} drawings in`;
+    if (H.phase === "drawing") return `Drawing · ${left(H.tLeft)}s left · ${H.draw ? H.draw.done.length : 0} done`;
+    if (H.phase === "menu" && H.hold) return "☕ Intermission. Tap the red button when you’re ready for the next round.";
     if (!H.auto) return H.phase === "menu" || H.phase === "lobby" ? "Autopilot is off. Tap the red button to play." : "Autopilot is off. Tap the red button to move on.";
     if (H.stepLeft) return `▶ Autopilot · next step in ${left(H.stepLeft)}s`;
     if (H.phase === "menu") return H.queue.length ? "▶ Autopilot is starting the next round…" : "Add rounds to the playlist and the autopilot takes it from there.";
@@ -72,7 +75,7 @@
   const roundTitle = id => { const x = H.rounds.find(r => r.id === id); return x ? x.title : id; };
   function roundBtn(x) {
     const queued = H.queue.indexOf(x.id), none = !x.n;
-    const tag = none ? "needs files" : x.played ? "played" : queued >= 0 ? `#${queued + 1} in playlist` : `${x.n} Q · ${x.timer}s`;
+    const tag = x.kind === "draw" ? (x.played ? "played · draw & guess" : queued >= 0 ? `#${queued + 1} in playlist` : "draw & guess") : none ? "needs files" : x.played ? "played" : queued >= 0 ? `#${queued + 1} in playlist` : `${x.n} Q · ${x.timer}s`;
     return `<div class="h-round${x.played ? " played" : ""}${queued >= 0 ? " queued" : ""}${none ? " none" : ""}" style="--c:${x.c1 ? esc(x.c1) : "var(--pine)"}">
       <button class="h-add" data-q="${esc(x.id)}"${none ? " disabled" : ""}><b>${esc(x.title)}</b><span>${tag}</span></button>
       <button class="h-now-btn" data-now="${esc(x.id)}" data-kind="${x.kind}"${none ? " disabled" : ""} aria-label="Play ${esc(x.title)} now">▶</button></div>`;
@@ -100,6 +103,8 @@
       <div class="card toggles">
         <label class="toggle"><input type="checkbox" data-t="auto"${H.auto ? " checked" : ""}><span><b>Autopilot</b><small>Moves through questions and plays the playlist by itself</small></span></label>
         <label class="toggle"><input type="checkbox" data-t="surpriseOn"${H.surprise ? " checked" : ""}><span><b>Surprise rounds</b><small>Now and then, a ${H.kid ? "kid" : "surprise"} round sneaks in between playlist rounds</small></span></label>
+        <div class="toggle"><span><b>Break between rounds</b><small>How long the fireplace shows before the next playlist round</small>
+          <span class="seg">${[[10, "10s"], [20, "20s"], [60, "1 min"], [120, "2 min"], [300, "5 min"]].map(([v, l]) => `<button data-brk="${v}" class="${H.breakSec === v ? "on" : ""}">${l}</button>`).join("")}</span></span></div>
         <label class="toggle"><input type="checkbox" data-t="kid"${H.kid ? " checked" : ""}><span><b>Kid mode 🧸</b><small>At least 30 seconds a question, kid rounds, Jingle Jiggle breaks</small></span></label>
       </div>
       <p class="h-sec">PLAYLIST (${H.queue.length})</p>
@@ -107,6 +112,7 @@
         : `<p class="small">Tap a round below to add it. ▶ plays a round right now.</p>`}
       <div class="h-row"><button class="btn" data-c="queueAll">Add all unplayed</button><button class="btn" data-c="clearQueue"${H.queue.length ? "" : " disabled"}>Clear playlist</button></div>
       ${H.kid ? section("KID ROUNDS 🧸", by("kid")) : ""}
+      ${section("PARTY GAMES 🖍️", by("draw"), "Everyone draws a movie on their phone, then everyone guesses.")}
       ${section("ROUNDS", feats)}
       ${section("PICTURES, SOUNDS &amp; VIDEO", by("media"), "These use files you add to assets/media. Rounds without files are greyed out.")}
       ${section("SURPRISE ROUNDS 🚨", by("alarm"))}
@@ -120,7 +126,7 @@
       <p class="h-sec">BIG SCREEN</p>
       <div class="h-row"><button class="btn" data-c="mute">${H.muted ? "Turn sound on" : "Mute sound"}</button>
         <button class="btn" data-c="music"${H.hasMusic ? "" : " disabled"}>${!H.hasMusic ? "No music files" : H.music ? "Music off" : "Music on"}</button>
-        <button class="btn" data-c="menu">Go to intermission</button><button class="btn" data-c="lobby">Back to lobby</button></div>`;
+        <button class="btn" data-c="menu">☕ Take a break</button><button class="btn" data-c="lobby">Back to lobby</button></div>`;
   }
   const last = {};
   function render() {
@@ -146,6 +152,8 @@
   });
   document.addEventListener("change", e => { const t = e.target.dataset.t; if (t) cmd(t, { on: e.target.checked }); });
   document.addEventListener("click", e => {
+    const b = e.target.closest("[data-brk]");
+    if (b) { cmd("breakSec", { s: +b.dataset.brk }); return; }
     const t = e.target.closest("[data-c],[data-q],[data-now],[data-adj],[data-kick],[data-unq],[data-up]");
     if (!t || t.disabled) return;
     if (t.dataset.c) {
