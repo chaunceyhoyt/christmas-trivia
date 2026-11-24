@@ -151,10 +151,13 @@
   }
 
   const last = {};
+  let lastViewKey = "";
   function put(sel, html) { if (last[sel] === html) return; last[sel] = html; $(sel).innerHTML = html; }
   function render() {
     const activeEl = document.activeElement;
-    if (activeEl && activeEl.matches("input:not([type=file])")) return; // don't wipe what someone is typing
+    const viewKey = S ? S.phase + ":" + S.epoch + ":" + (S.gif ? S.gif.pi : "") : "";
+    if (activeEl && activeEl.matches("input:not([type=file])") && viewKey === lastViewKey) return; // don't wipe what someone is typing
+    lastViewKey = viewKey;
     if (cropping) return;
     const r = S && S.round;
     document.documentElement.style.setProperty("--theme", r && (r.kind === "alarm" || r.kind === "kid") && r.c1 && ["alarm", "intro", "silly", "ready", "question", "locked", "reveal"].includes(S.phase) ? (r.c1 === "#ffd166" ? "#c98c06" : r.c1) : "var(--cran)");
@@ -175,6 +178,9 @@
         case "menu": html = scoreCard() + vWait(S.hold ? "Intermission ☕" : S.next && S.next[0] ? "Up next: " + S.next[0] : "Between rounds", waits[Math.floor(gotAt / 30000) % waits.length]); break;
         case "drawpick": html = vDrawPick(); break;
         case "finale": html = vFinale(); break;
+        case "gifpick": html = vGifPick(); break;
+        case "gifvote": html = vGifVote(); break;
+        case "gifresult": html = vGifResult(); break;
         case "drawing": html = vDrawing(); break;
         case "intro": html = vIntro(); break;
         case "alarm": html = vWait(r.title, r.rule); over = vAlarm(); break;
@@ -191,7 +197,7 @@
     put("#overlay", over);
     put("#foot", `<span>${online ? "● Online" : "○ Connecting"}</span>${code ? `<span>Game ${esc(code)}</span>` : ""}
       ${me.name && !editing ? `<button data-act="rename">Change name or face</button>` : ""}${code ? `<button data-act="code">Different game</button>` : ""}`);
-    timers(); attachPad();
+    timers(); attachPad(); attachGif();
     const f = $("#nameIn") || $("#codeIn");
     if (f && !f.value) f.focus();
   }
@@ -201,7 +207,7 @@
     if (!S) return;
     const el = $("#pTimer"), cane = $("#pCane"), rb = $("#readyBar");
     const since = Date.now() - gotAt;
-    if ((S.phase === "question" || S.phase === "drawing") && S.tLeft) {
+    if (["question", "drawing", "gifpick", "gifvote"].includes(S.phase) && S.tLeft) {
       const left = S.paused ? S.tLeft : Math.max(0, S.tLeft - since);
       if (el) el.textContent = Math.ceil(left / 1000);
       if (cane && !cane.dataset.e) {
@@ -221,6 +227,77 @@
     timers();
     if (S && S.phase === "alarm" && Date.now() - alarmSeenAt < 2600 && Date.now() - alarmSeenAt > 2200) render();
   }, 250);
+
+  /* ---------- GIF Wrapped ---------- */
+  const GIFKEY = (window.TRIVIA_CONFIG && TRIVIA_CONFIG.giphyKey) || "";
+  let gif = { key: "", results: [], sel: null, sent: false, q: "" }, gifT = 0, gifReq = 0;
+  function vGifPick() {
+    const g = S.gif;
+    return `<div class="card"><p class="p-item"><span>GIF Wrapped</span><span>${g.pi + 1} of ${g.n}</span></p><p class="p-q">${esc(g.prompt)}</p></div>
+      <div class="p-clock"><b id="pTimer"></b><div class="cane"><i id="pCane"></i></div></div>
+      <div class="card gif-panel">
+        <div class="gif-search"><input id="gifQ" type="search" placeholder="Search Christmas GIFs…" autocomplete="off" enterkeyhint="search"><button class="btn green" data-act="gifgo">Search</button></div>
+        <div class="gif-chips">${["funny", "Elf", "Home Alone", "Grinch", "Santa", "Christmas Vacation", "shocked", "dancing", "fail"].map(t => `<button data-gq="${esc(t)}">${esc(t)}</button>`).join("")}</div>
+        <div class="gif-res" id="gifRes"></div>
+        <p class="giphy-tag dark">Powered by GIPHY</p>
+      </div>
+      <div class="card gif-sel" id="gifSel" hidden>
+        <img id="gifSelImg" alt="">
+        <div class="field"><label for="gifCap">Caption (optional)</label><input id="gifCap" maxlength="80" autocomplete="off" placeholder="Add something funny…"></div>
+        <button class="btn red big-btn" data-act="gifsend">Send it! 🎁</button>
+        <p class="p-status" id="gifStatus"></p>
+      </div>`;
+  }
+  /* The GIF panel fills in without re-rendering, so typing and results aren't wiped. */
+  function attachGif() {
+    if (!S || S.phase !== "gifpick" || !S.gif || !$("#gifRes")) return;
+    const key = S.gif.seq + ":" + S.gif.pi;
+    if (gif.key !== key) { gif = { key, results: [], sel: null, sent: false, q: "" }; }
+    if (!gif.results.length) searchGif("funny"); else drawGifs();
+    if (gif.sel) showSel();
+    const st = $("#gifStatus"); if (st) st.textContent = S.gif.done.includes(me.pid) ? "Sent! Pick another to change it." : "";
+  }
+  function searchGif(term) {
+    gif.q = term;
+    const box = $("#gifRes"); if (!box) return;
+    if (!GIFKEY) { box.innerHTML = `<p class="small">The host hasn’t added a GIPHY key yet.</p>`; return; }
+    box.innerHTML = `<p class="small">Looking for Christmas GIFs…</p>`;
+    const id = ++gifReq;
+    const q = /christmas|xmas/i.test(term) ? term : "christmas " + term;
+    fetch(`https://api.giphy.com/v1/gifs/search?api_key=${encodeURIComponent(GIFKEY)}&q=${encodeURIComponent(q)}&limit=24&rating=${S.gif.rating}&lang=en&bundle=messaging_non_clips`)
+      .then(r => r.json()).then(j => {
+        if (id !== gifReq) return;
+        gif.results = (j.data || []).map(d => {
+          const im = d.images || {}, sm = im.fixed_width_small || im.fixed_width || {}, big = im.downsized_medium || im.fixed_height || im.downsized || {};
+          return { s: sm.url, b: big.url, w: +sm.width || 100, h: +sm.height || 100 };
+        }).filter(x => x.s && x.b);
+        drawGifs();
+      }).catch(() => { if (id === gifReq && $("#gifRes")) $("#gifRes").innerHTML = `<p class="small">Couldn’t reach GIPHY. Check your connection and try again.</p>`; });
+  }
+  function drawGifs() {
+    const box = $("#gifRes"); if (!box) return;
+    box.innerHTML = gif.results.length ? gif.results.map((x, i) => `<button class="gif-opt${gif.sel === x ? " on" : ""}" data-gif="${i}"><img src="${esc(x.s)}" alt="" loading="lazy"></button>`).join("")
+      : `<p class="small">No Christmas GIFs for “${esc(gif.q)}”. Try another word.</p>`;
+  }
+  function showSel() {
+    const box = $("#gifSel"); if (!box || !gif.sel) return;
+    box.hidden = false; $("#gifSelImg").src = gif.sel.b;
+  }
+  function vGifVote() {
+    const g = S.gif, mine = g.voted.includes(me.pid) ? myVote : null;
+    return `<div class="card"><p class="p-item"><span>GIF Wrapped · vote!</span><span>${g.pi + 1} of ${g.n}</span></p><p class="p-q">${esc(g.prompt)}</p></div>
+      <div class="p-clock"><b id="pTimer"></b><div class="cane"><i id="pCane"></i></div></div>
+      <p class="p-status">Tap the funniest one. You can’t vote for your own!</p>
+      <div class="gif-vote">${(g.cards || []).map((c, i) => `<button class="gif-vc${mine === c.pid ? " on" : ""}" data-gv="${esc(c.pid)}"${c.pid === me.pid ? " disabled" : ""}>
+        <span class="num">${i + 1}</span><img src="${esc(c.s)}" alt="">${c.cap ? `<span class="cap">${esc(c.cap)}</span>` : ""}${c.pid === me.pid ? `<span class="yours">Yours</span>` : ""}</button>`).join("")}</div>`;
+  }
+  let myVote = null;
+  function vGifResult() {
+    const g = S.gif, x = g.res && g.res[me.pid];
+    if (!x) return vWait("The votes are in!", "Look at the TV to see who won.");
+    return `<div class="card welcome">${x.best ? `<div class="trophy">🏆</div><p class="label">BEST IN SHOW!</p>` : `<div class="trophy">🎁</div>`}
+      <h1>${x.votes} vote${x.votes === 1 ? "" : "s"}</h1><p><b>+${x.d}</b> points</p></div>`;
+  }
 
   /* ---------- Finale ceremony ---------- */
   let finaleBuzz = "";
@@ -339,6 +416,8 @@
   /* Remember what was typed in the name box before the form re-renders. */
   function keepName() { const n = $("#nameIn"); if (n) { me.name = n.value.trim().slice(0, 24) || me.name; n.blur(); } }
 
+  document.addEventListener("keydown", e => { if (e.target.id === "gifQ" && e.key === "Enter" && e.target.value.trim()) { e.preventDefault(); clearTimeout(gifT); e.target.blur(); searchGif(e.target.value.trim()); } });
+  document.addEventListener("input", e => { if (e.target.id === "gifQ") { clearTimeout(gifT); const v = e.target.value.trim(); if (v.length > 2) gifT = setTimeout(() => searchGif(v), 700); } });
   document.addEventListener("submit", e => {
     e.preventDefault();
     if (e.target.id === "codeForm") {
@@ -363,6 +442,12 @@
       buzz([30]); render();
       return;
     }
+    const go = e.target.closest("[data-gif]");
+    if (go && S && S.phase === "gifpick") { gif.sel = gif.results[+go.dataset.gif]; drawGifs(); showSel(); $("#gifSel").scrollIntoView({ behavior: "smooth", block: "nearest" }); return; }
+    const gq = e.target.closest("[data-gq]");
+    if (gq && S && S.phase === "gifpick") { const q = $("#gifQ"); if (q) q.value = gq.dataset.gq; searchGif(gq.dataset.gq); return; }
+    const gv = e.target.closest("[data-gv]");
+    if (gv && S && S.phase === "gifvote" && !gv.disabled) { myVote = gv.dataset.gv; ch.send("gifvote", { pid: me.pid, seq: S.gif.seq, pi: S.gif.pi, for: myVote }); buzz([30]); last["#view"] = null; S.gif.voted.push(me.pid); render(); return; }
     const dp = e.target.closest("[data-dpick]");
     if (dp && S && S.phase === "drawpick") { const i = +dp.dataset.dpick; S.draw.picks[me.pid] = i; ch.send("drawpick", { pid: me.pid, seq: S.draw.seq, i }); buzz([30]); last["#view"] = null; render(); return; }
     const col = e.target.closest("[data-col]"), size = e.target.closest("[data-size]");
@@ -377,6 +462,13 @@
     if (k === "cropCancel") { cropping = null; last["#overlay"] = null; $("#overlay").innerHTML = ""; render(); }
     if (k === "cropOk") finishCrop();
     if (k === "again") join(true);
+    if (k === "gifgo") { const q = $("#gifQ"); if (q && q.value.trim()) { q.blur(); searchGif(q.value.trim()); } }
+    if (k === "gifsend" && gif.sel && S && S.phase === "gifpick") {
+      const cap = ($("#gifCap") || {}).value || "";
+      ch.send("gifsub", { pid: me.pid, seq: S.gif.seq, pi: S.gif.pi, gif: { s: gif.sel.s, b: gif.sel.b }, cap });
+      const c = $("#gifCap"); if (c) c.blur();
+      const st = $("#gifStatus"); if (st) st.textContent = "Sent! Pick another to change it."; buzz([30]);
+    }
     if (k === "undo" && pad) { pad.strokes.pop(); redraw(); }
     if (k === "clear" && pad) { pad.strokes = []; redraw(); }
     if (k === "drawDone" && pad) sendDrawing();

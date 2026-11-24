@@ -20,9 +20,9 @@
     if (!H) return "Next";
     const last = H.round && H.qi + 1 >= H.round.n;
     return { lobby: "Start the show", menu: H.queue.length ? "Start the next round now" : "Play the next round", intro: "First question", alarm: "First question", silly: "Next question",
-      ready: "Open answers now", finale: H.finale && H.finale.k === "end" ? "Back to intermission" : "Next award", drawpick: "Start drawing now", drawing: "Done drawing, start guessing", question: "Lock answers now", locked: "Reveal the answer", reveal: last ? "Finish the round" : "Next question", roundend: "Back to intermission" }[H.phase] || "Next";
+      ready: "Open answers now", gifpick: "Close GIF picking, start the vote", gifvote: "Close the vote", gifresult: H.gif && H.gif.pi + 1 >= H.gif.n ? "Finish the round" : "Next prompt", finale: H.finale && H.finale.k === "end" ? "Back to intermission" : "Next award", drawpick: "Start drawing now", drawing: "Done drawing, start guessing", question: "Lock answers now", locked: "Reveal the answer", reveal: last ? "Finish the round" : "Next question", roundend: "Back to intermission" }[H.phase] || "Next";
   };
-  const phaseName = p => ({ lobby: "Lobby", menu: "Intermission", intro: "Round intro", alarm: "SURPRISE!", silly: "Jingle Jiggle", ready: "Reading time", finale: "Finale ceremony", drawpick: "Picking movies", drawing: "Drawing", question: "Answers open", locked: "Avatars landing", reveal: "Answer revealed", roundend: "Round over" }[p] || p);
+  const phaseName = p => ({ lobby: "Lobby", menu: "Intermission", intro: "Round intro", alarm: "SURPRISE!", silly: "Jingle Jiggle", ready: "Reading time", gifpick: "Picking GIFs", gifvote: "Voting", gifresult: "GIF results", finale: "Finale ceremony", drawpick: "Picking movies", drawing: "Drawing", question: "Answers open", locked: "Avatars landing", reveal: "Answer revealed", roundend: "Round over" }[p] || p);
   const left = ms => Math.max(0, Math.ceil((ms - (H && !H.paused ? Date.now() - gotAt : 0)) / 1000));
 
   function renderHead() {
@@ -39,6 +39,8 @@
     if (H.paused) return "⏸ Paused. Nothing moves until you resume.";
     if (H.phase === "question") return `Answers open · ${left(H.tLeft)}s left`;
     if (H.phase === "ready") return "Players are reading the question…";
+    if (H.phase === "gifpick") return `Picking GIFs · ${left(H.tLeft)}s left · ${H.gif ? H.gif.done.length : 0} sent`;
+    if (H.phase === "gifvote") return `Voting · ${left(H.tLeft)}s left · ${H.gif ? H.gif.voted.length : 0} voted`;
     if (H.phase === "finale") return H.finale && H.finale.k === "end" ? "🏆 That’s a wrap! Merry Christmas!" : "🏆 The finale runs by itself. Tap the red button to skip ahead.";
     if (H.phase === "drawpick") return `Players are picking their movie · ${H.draw ? H.draw.done.length : 0} drawings in`;
     if (H.phase === "drawing") return `Drawing · ${left(H.tLeft)}s left · ${H.draw ? H.draw.done.length : 0} done`;
@@ -66,6 +68,8 @@
         <p class="p-q${r.big ? " emoji" : ""}">${esc(sec.q)}</p>
         <ul class="h-choices">${(sec.choices || []).map((c, i) => `<li class="${i === sec.correct ? "right" : ""}"><b>${LETTERS[i]}</b><span>${esc(c)}${i === sec.correct ? " ✓" : ""}</span><span class="n">${counts[i]}</span></li>`).join("")}</ul>
         ${sec.note ? `<p class="small">${esc(sec.note)}</p>` : ""}`;
+    } else if (r && H.gif && H.phase.startsWith("gif")) {
+      body = `<p class="p-item"><span>GIF Wrapped · prompt ${H.gif.pi + 1}/${H.gif.n}</span><span>${phaseName(H.phase)}</span></p><h2>${esc(H.gif.prompt)}</h2>`;
     } else if (r) {
       body = `<p class="p-item"><span>${phaseName(H.phase)}</span><span>${r.n} questions · ${r.timer}s each</span></p><h2>${esc(r.title)}</h2>${r.rule ? `<p>${esc(r.rule)}</p>` : ""}${H.silly ? `<p><b>Jingle Jiggle:</b> ${esc(H.silly)}</p>` : ""}`;
     } else {
@@ -76,7 +80,7 @@
   const roundTitle = id => { const x = H.rounds.find(r => r.id === id); return x ? x.title : id; };
   function roundBtn(x) {
     const queued = H.queue.indexOf(x.id), none = !x.n;
-    const tag = x.kind === "draw" ? (x.played ? "played · draw & guess" : queued >= 0 ? `#${queued + 1} in playlist` : "draw & guess") : none ? "needs files" : x.played ? "played" : queued >= 0 ? `#${queued + 1} in playlist` : `${x.n} Q · ${x.timer}s`;
+    const tag = x.kind === "gif" ? (!x.n ? "needs GIPHY key" : x.played ? "played · GIFs" : queued >= 0 ? `#${queued + 1} in playlist` : "pick a GIF & vote") : x.kind === "draw" ? (x.played ? "played · draw & guess" : queued >= 0 ? `#${queued + 1} in playlist` : "draw & guess") : none ? "needs files" : x.played ? "played" : queued >= 0 ? `#${queued + 1} in playlist` : `${x.n} Q · ${x.timer}s`;
     return `<div class="h-round${x.played ? " played" : ""}${queued >= 0 ? " queued" : ""}${none ? " none" : ""}" style="--c:${x.c1 ? esc(x.c1) : "var(--pine)"}">
       <button class="h-add" data-q="${esc(x.id)}"${none ? " disabled" : ""}><b>${esc(x.title)}</b><span>${tag}</span></button>
       <button class="h-now-btn" data-now="${esc(x.id)}" data-kind="${x.kind}"${none ? " disabled" : ""} aria-label="Play ${esc(x.title)} now">▶</button></div>`;
@@ -113,7 +117,7 @@
         : `<p class="small">Tap a round below to add it. ▶ plays a round right now.</p>`}
       <div class="h-row"><button class="btn" data-c="queueAll">Add all unplayed</button><button class="btn" data-c="clearQueue"${H.queue.length ? "" : " disabled"}>Clear playlist</button></div>
       ${H.kid ? section("KID ROUNDS 🧸", by("kid")) : ""}
-      ${section("PARTY GAMES 🖍️", by("draw"), "Everyone draws a movie on their phone, then everyone guesses.")}
+      ${section("PARTY GAMES 🖍️", [...by("draw"), ...by("gif")], "Draw the Halls: everyone draws a movie, then guesses. GIF Wrapped: everyone answers a prompt with a Christmas GIF, then votes." + (R.some(x => x.kind === "gif" && !x.n) ? " GIF Wrapped needs a GIPHY key in assets/config.js (see the README)." : ""))}
       ${section("ROUNDS", feats)}
       ${section("PICTURES, SOUNDS &amp; VIDEO", by("media"), "These use files you add to assets/media. Rounds without files are greyed out.")}
       ${section("SURPRISE ROUNDS 🚨", by("alarm"))}

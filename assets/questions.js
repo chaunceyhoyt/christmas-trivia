@@ -384,6 +384,11 @@ window.ROUNDS = [
  drawSec:90,artist:100,emoji:"🖍️🎨🎄🖼️",
  rule:"Pick one of three movies on your phone and draw it. No letters! Guessers score like normal. Artists get 100 for every person who guesses theirs.",qs:[]},
 
+/* ---------- GIF Wrapped: everyone answers a prompt with a Christmas GIF (from GIPHY), then votes. ---------- */
+{id:"gifwrapped",kind:"gif",title:"GIF Wrapped",sub:"Answer with the perfect Christmas GIF. Everyone votes for the funniest.",
+ prompts:4,pickSec:75,voteSec:25,perVote:100,best:200,emoji:"🎁😂🎄📱",
+ rule:"Search for a Christmas GIF on your phone and add a caption if you like. Then vote for the funniest one. 100 points per vote, +200 for Best in Show.",qs:[]},
+
 /* ---------- Speed round ---------- */
 {id:"blitzen",kind:"feature",title:"Blitzen’s Lightning Round",sub:"Five seconds. No thinking. Just tap.",timer:5,speed:true,
  rule:"Only 5 seconds per question! Fast answers score big.",tough:"11111111111111",qs:[
@@ -543,4 +548,38 @@ window.DRAW_PROMPTS = [
 {t:"The Snowman",kid:1},{t:"Santa Claus: The Movie",kid:1},{t:"A Garfield Christmas",kid:1},{t:"Spirited"},
 {t:"Violent Night"},{t:"Noelle",kid:1},{t:"Olaf’s Frozen Adventure",kid:1},{t:"The Grinch (2018)",kid:1},
 {t:"Rise of the Guardians",kid:1},{t:"Daddy’s Home 2"},{t:"The Office: Secret Santa"}
+];
+
+/* Prompts for GIF Wrapped. kid:1 ones are used in kid mode. */
+window.GIF_PROMPTS = [
+{t:"Your face when Aunt Bethany says grace."},
+{t:"When Cousin Eddie’s RV pulls into the driveway."},
+{t:"Checking the mailbox for your Jelly of the Month Club."},
+{t:"When the Christmas lights FINALLY turn on.",kid:1},
+{t:"Opening a present you just KNOW is socks.",kid:1},
+{t:"When someone says Die Hard isn’t a Christmas movie."},
+{t:"Kevin realizing he’s home alone.",kid:1},
+{t:"You after the third plate of Christmas dinner.",kid:1},
+{t:"The Grinch hearing the Whos start singing.",kid:1},
+{t:"When you see Santa ate the cookies you left out.",kid:1},
+{t:"When you win a “major award.”"},
+{t:"Trying to untangle last year’s Christmas lights.",kid:1},
+{t:"When someone plays Mariah Carey on November 1st."},
+{t:"The dog after eating the Christmas ham.",kid:1},
+{t:"When someone takes the last Christmas cookie.",kid:1},
+{t:"Hearing sleigh bells on the roof at midnight.",kid:1},
+{t:"Walking into the office Christmas party."},
+{t:"Pretending to love the fruitcake."},
+{t:"When the Wi-Fi goes out on Christmas morning.",kid:1},
+{t:"When Mom says “just ONE more family photo.”",kid:1},
+{t:"Assembling a toy at 2 a.m. on Christmas Eve."},
+{t:"When they announce a snow day.",kid:1},
+{t:"Finding out you’re on the naughty list.",kid:1},
+{t:"Your relatives arguing about politics at dinner."},
+{t:"When the in-laws say they’re staying “a few more days.”"},
+{t:"Realizing you forgot to buy a gift for someone who got you one."},
+{t:"When the kids wake you up at 5 a.m. on Christmas.",kid:1},
+{t:"You watching the Christmas tree start to tip over.",kid:1},
+{t:"Grandpa when the thermostat gets touched."},
+{t:"When the ugly sweater contest is announced.",kid:1}
 ];

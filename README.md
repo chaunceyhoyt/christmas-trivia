@@ -45,6 +45,21 @@ If the TV laptop reloads, the game picks up where it left off. **New game** at t
 - The Final Reel and Yippee-Ki-Yay are double points. Rudolph and Wet Bandits take points for wrong answers, the Grinch steals from the leader, Turbo Time gives the fastest right answer +200, Snow Day pays 25 just for answering. Kid rounds never take points away.
 - Use **−100 / +100** next to any player on the host controller for dares, ties or arguments.
 
+## Party games and the finale
+
+- **Draw the Halls:** everyone picks one of three Christmas movies on their phone and draws it. The TV replays each drawing and everyone guesses. Artists get 100 for each correct guess. Ends with Grandma’s Fridge.
+- **GIF Wrapped:** everyone answers a funny prompt with a Christmas GIF (plus an optional caption), then votes for the funniest. 100 points per vote, +200 for Best in Show. Searches are locked to Christmas GIFs and rated PG (G in kid mode).
+- **Finale ceremony:** silly awards for the night, then the podium. Start it from the host controller after your last round.
+
+### Turn on GIF Wrapped (one time, about 5 minutes)
+
+1. Go to [developers.giphy.com/dashboard](https://developers.giphy.com/dashboard/) and sign up (free).
+2. Click **Create an App**, choose **API**, and give it any name and description.
+3. Copy the **API key** it shows you.
+4. On GitHub, open `assets/config.js`, click the pencil to edit, and paste the key between the quotes on the `giphyKey: ""` line. Commit the change.
+
+The key is meant to be used from web pages, like the Supabase key. Until it's added, GIF Wrapped shows "needs GIPHY key" on the host controller.
+
 ## Sounds, music, pictures and video
 
 Every sound has a built-in stand-in. To use real Christmas sound effects and background music, drop MP3s into `assets/sounds/` with the names in [assets/sounds/README.md](assets/sounds/README.md).
