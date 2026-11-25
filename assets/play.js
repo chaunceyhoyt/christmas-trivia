@@ -365,6 +365,7 @@
   function vDrawing() {
     const o = myOpts(); if (!o) return vWait("Everybody’s drawing…", "Get ready to guess what they drew!");
     const title = o[S.draw.picks[me.pid] >= 0 ? S.draw.picks[me.pid] : 0];
+    if (pad && pad.seq !== S.draw.seq) pad = null; // a new Draw the Halls round: start with a blank pad
     if (pad && pad.sent) return `<div class="card welcome"><h1>Sent to the fridge! ✓</h1><p>You drew <b>${esc(title)}</b>. Waiting for the others…</p></div>`;
     return `<div class="card draw-head"><span class="label">DRAW THIS</span><h2>${esc(title)}</h2><span class="small">No letters or numbers!</span></div>
       <div class="p-clock"><b id="pTimer"></b><div class="cane"><i id="pCane"></i></div></div>
