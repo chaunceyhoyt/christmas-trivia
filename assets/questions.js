@@ -536,23 +536,18 @@ window.ROUNDS = [
 ]}
 ];
 
-/* Movies and shows for Draw the Halls. kid:true ones are used in kid mode. */
+/* Movies and shows for Draw the Halls. Kept to well-known, easy-to-draw titles, with no near-duplicates
+   (only one Grinch, one Home Alone, one Christmas Carol) so the three choices and the guesses never get confusing.
+   kid:1 ones are used in kid mode. */
 window.DRAW_PROMPTS = [
-{t:"Home Alone",kid:1},{t:"Elf",kid:1},{t:"A Christmas Story"},{t:"Christmas Vacation"},{t:"Die Hard"},
-{t:"How the Grinch Stole Christmas",kid:1},{t:"The Polar Express",kid:1},{t:"The Nightmare Before Christmas",kid:1},
-{t:"The Muppet Christmas Carol",kid:1},{t:"The Santa Clause",kid:1},{t:"Jingle All the Way"},{t:"Gremlins"},
-{t:"It’s a Wonderful Life"},{t:"Miracle on 34th Street"},{t:"Frosty the Snowman",kid:1},{t:"Rudolph the Red-Nosed Reindeer",kid:1},
-{t:"A Charlie Brown Christmas",kid:1},{t:"Love Actually"},{t:"The Holiday"},{t:"Scrooged"},{t:"Jack Frost"},
-{t:"Klaus",kid:1},{t:"Arthur Christmas",kid:1},{t:"Bad Santa"},{t:"Fred Claus"},{t:"White Christmas"},
-{t:"Home Alone 2: Lost in New York",kid:1},{t:"Deck the Halls"},{t:"Christmas with the Kranks"},
-{t:"The Year Without a Santa Claus",kid:1},{t:"Santa Claus Is Comin’ to Town",kid:1},{t:"Mickey’s Christmas Carol",kid:1},
-{t:"A Christmas Carol"},{t:"Four Christmases"},{t:"Krampus"},{t:"The Christmas Chronicles",kid:1},{t:"Last Christmas"},
-{t:"Prancer",kid:1},{t:"Ernest Saves Christmas"},{t:"Batman Returns"},{t:"Edward Scissorhands"},{t:"Trading Places"},
-{t:"Lethal Weapon"},{t:"Seinfeld: Festivus"},{t:"Friends: The Holiday Armadillo"},{t:"Mr. Bean’s Christmas"},
-{t:"The Star Wars Holiday Special"},{t:"Olive, the Other Reindeer",kid:1},{t:"Shrek the Halls",kid:1},
-{t:"The Snowman",kid:1},{t:"Santa Claus: The Movie",kid:1},{t:"A Garfield Christmas",kid:1},{t:"Spirited"},
-{t:"Violent Night"},{t:"Noelle",kid:1},{t:"Olaf’s Frozen Adventure",kid:1},{t:"The Grinch (2018)",kid:1},
-{t:"Rise of the Guardians",kid:1},{t:"Daddy’s Home 2"},{t:"The Office: Secret Santa"}
+{t:"Home Alone",kid:1},{t:"Elf",kid:1},{t:"How the Grinch Stole Christmas",kid:1},{t:"The Polar Express",kid:1},
+{t:"Frosty the Snowman",kid:1},{t:"Rudolph the Red-Nosed Reindeer",kid:1},{t:"The Nightmare Before Christmas",kid:1},
+{t:"The Santa Clause",kid:1},{t:"A Charlie Brown Christmas",kid:1},{t:"A Christmas Carol",kid:1},
+{t:"Arthur Christmas",kid:1},{t:"Klaus",kid:1},{t:"The Snowman",kid:1},{t:"Shrek the Halls",kid:1},
+{t:"Jingle All the Way",kid:1},{t:"The Christmas Chronicles",kid:1},{t:"Santa Claus Is Comin’ to Town",kid:1},
+{t:"A Christmas Story"},{t:"Christmas Vacation"},{t:"Die Hard"},{t:"Gremlins"},{t:"It’s a Wonderful Life"},
+{t:"Miracle on 34th Street"},{t:"Love Actually"},{t:"Bad Santa"},{t:"Krampus"},{t:"Jack Frost"},
+{t:"White Christmas"},{t:"Edward Scissorhands"},{t:"Batman Returns"},{t:"Scrooged"}
 ];
 
 /* Prompts for GIF Wrapped. kid:1 ones are used in kid mode. */
