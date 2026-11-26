@@ -38,7 +38,7 @@ If the TV laptop reloads, the game picks up where it left off. **New game** at t
 
 ## Scoring
 
-- Every question shows its toughness: **Gingerbread Easy** 100, **Tinsel Tricky** 200, **Fruitcake Tough** 300.
+- Every question shows its difficulty: **Easy** 100, **Medium** 200, **Hard** 300.
 - **Speed bonus:** answer instantly and you double it. It shrinks to nothing as the timer runs out.
 - **Snowball streak:** 3 right in a row adds +50, 4 adds +100, up to +250 a question. A miss melts it.
 - **Golden ornament:** one random question per round is worth double.

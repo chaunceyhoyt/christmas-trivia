@@ -47,9 +47,9 @@ window.ornament = (p, cls = "") => {
 
 /* Question toughness: 1 easy, 2 medium, 3 hard. */
 window.TOUGH = {
-  1: { name: "Gingerbread Easy", pts: 100 },
-  2: { name: "Tinsel Tricky", pts: 200 },
-  3: { name: "Fruitcake Tough", pts: 300 }
+  1: { name: "Easy", pts: 100 },
+  2: { name: "Medium", pts: 200 },
+  3: { name: "Hard", pts: 300 }
 };
 window.toughMeter = (t, mult) => {
   const T = TOUGH[t] || TOUGH[2];
