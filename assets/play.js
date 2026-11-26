@@ -234,6 +234,13 @@
   /* ---------- GIF Wrapped ---------- */
   const GIFKEY = (window.TRIVIA_CONFIG && TRIVIA_CONFIG.giphyKey) || "";
   let gif = { key: "", results: [], sel: null, sent: false, q: "" }, gifT = 0, gifReq = 0;
+  let gifCache = {};
+  try { gifCache = JSON.parse(localStorage.getItem("xmas-gifcache") || "{}") || {}; } catch (e) {}
+  function saveGifCache() {
+    const keep = Object.entries(gifCache).filter(([, v]) => Date.now() - v.at < 3600000).sort((a, b) => b[1].at - a[1].at).slice(0, 30);
+    gifCache = Object.fromEntries(keep);
+    try { localStorage.setItem("xmas-gifcache", JSON.stringify(gifCache)); } catch (e) {}
+  }
   function vGifPick() {
     const g = S.gif;
     return `<div class="card"><p class="p-item"><span>GIF Wrapped</span><span>${g.pi + 1} of ${g.n}</span></p><p class="p-q">${esc(g.prompt)}</p></div>
@@ -267,6 +274,9 @@
     box.innerHTML = `<p class="small">Looking for Christmas GIFs…</p>`;
     const id = ++gifReq;
     const q = /christmas|xmas/i.test(term) ? term : "christmas " + term;
+    /* Reuse recent results for the same search, so GIPHY's hourly limit lasts the whole party. */
+    const ck = (S.gif.rating + ":" + q).toLowerCase(), hit = gifCache[ck];
+    if (hit && Date.now() - hit.at < 3600000) { gif.results = hit.list; drawGifs(); return; }
     fetch(`https://api.giphy.com/v1/gifs/search?api_key=${encodeURIComponent(GIFKEY)}&q=${encodeURIComponent(q)}&limit=24&rating=${S.gif.rating}&lang=en&bundle=messaging_non_clips`)
       .then(r => r.json()).then(j => {
         if (id !== gifReq) return;
@@ -274,6 +284,7 @@
           const im = d.images || {}, sm = im.fixed_width_small || im.fixed_width || {}, big = im.downsized_medium || im.fixed_height || im.downsized || {};
           return { s: sm.url, b: big.url, w: +sm.width || 100, h: +sm.height || 100 };
         }).filter(x => x.s && x.b);
+        if (gif.results.length) { gifCache[ck] = { at: Date.now(), list: gif.results }; saveGifCache(); }
         drawGifs();
       }).catch(() => { if (id === gifReq && $("#gifRes")) $("#gifRes").innerHTML = `<p class="small">Couldn’t reach GIPHY. Check your connection and try again.</p>`; });
   }
