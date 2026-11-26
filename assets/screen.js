@@ -46,13 +46,19 @@
   const active = () => Object.keys(G.players).filter(id => Date.now() - (G.players[id].seen || 0) < 45000 && id !== artistNow());
 
   /* ---------- media availability ---------- */
-  const mediaOk = {};
+  const mediaOk = {}, imgSrc = {};
   const mediaSrc = q => q[4] && (q[4].img || q[4].audio || q[4].video);
   function probeMedia() {
     R.forEach(r => r.qs.forEach((q, i) => {
       const src = mediaSrc(q); if (!src) return;
       const k = r.id + ":" + i, done = ok => { if (mediaOk[k] !== ok) { mediaOk[k] = ok; render(); publish(); } };
-      if (q[4].img) { const im = new Image(); im.onload = () => done(true); im.onerror = () => done(false); im.src = src; }
+      if (q[4].img) {
+        /* Pictures are PNG, but a JPG with the same name works too. */
+        const alt = src.replace(/\.png$/i, ".jpg"), im = new Image();
+        im.onload = () => { imgSrc[src] = im.src.endsWith(".jpg") && alt !== src ? alt : src; done(true); };
+        im.onerror = () => { if (alt !== src && !im.dataset.tried) { im.dataset.tried = "1"; im.src = alt; } else done(false); };
+        im.src = src;
+      }
       else { const el = document.createElement(q[4].video ? "video" : "audio"); el.preload = "metadata"; el.onloadedmetadata = () => done(true); el.onerror = () => done(false); el.src = src; }
     }));
   }
@@ -629,7 +635,7 @@
       media.el = cv; media.kind = "draw"; step();
     }
     else if (m.tune) { media.kind = "tune"; if (play) SFX.tune(m.tune, m.bpm || 120); }
-    else if (m.img) { const im = new Image(); im.src = m.img; im.alt = ""; im.className = "media-img fx-" + (m.fx || "none"); media.el = im; media.kind = "img"; }
+    else if (m.img) { const im = new Image(); im.src = imgSrc[m.img] || m.img; im.alt = ""; im.className = "media-img fx-" + (m.fx || "none"); media.el = im; media.kind = "img"; }
     else if (m.audio) { const a = new Audio(m.audio); a.muted = SFX.muted; if (play) a.play().catch(() => {}); media.audio = a; media.kind = "audio"; }
     else if (m.video) {
       const v = document.createElement("video");

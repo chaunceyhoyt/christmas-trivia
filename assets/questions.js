@@ -20,7 +20,7 @@
 
    Media (5th item in a question):
      {tune:"E4 1,E4 1,E4 2", bpm:180}   play a melody on the music box (note + length in beats, R = rest)
-     {img:"assets/media/x.jpg", fx:"blur"}   show a picture. fx "blur" or "zoom" starts hidden and clears up as time runs out
+     {img:"assets/media/x.png", fx:"blur"}   show a picture. fx "blur" or "zoom" starts hidden and clears up as time runs out
      {audio:"assets/media/x.mp3"}       play a sound clip on the TV
      {video:"assets/media/x.mp4", start:12, end:20}   play a video clip on the TV
    A question whose picture, sound or video file is missing is skipped automatically. */
@@ -436,30 +436,30 @@ window.ROUNDS = [
    Questions whose file is missing are skipped. A round with no files at all is hidden. ---------- */
 {id:"framegame",kind:"media",title:"The Frame Game",sub:"Guess the movie from one blurry frame",lead:"Which movie is this?",
  rule:"The picture starts blurry and clears up as time runs out. Guess early for more points!",tough:"112112121212112222232312",qs:[
-["Which movie is this?","Home Alone",["Home Alone 2","Christmas Vacation","Jingle All the Way"],"Kevin’s house is a real home in Winnetka, Illinois.",{img:"assets/media/home-alone.jpg",fx:"blur"}],
-["Which movie is this?","Elf",["The Santa Clause","Fred Claus","Jack Frost"],"The North Pole scenes were inspired by the old Rankin/Bass TV specials.",{img:"assets/media/elf.jpg",fx:"blur"}],
-["Which movie is this?","A Christmas Story",["Christmas Vacation","Scrooged","Home Alone"],"The house used for the outside shots is in Cleveland, and it’s now a museum.",{img:"assets/media/a-christmas-story.jpg",fx:"blur"}],
-["Which movie is this?","Christmas Vacation",["Deck the Halls","Christmas with the Kranks","Home Alone"],"Chevy Chase plays Clark Griswold.",{img:"assets/media/christmas-vacation.jpg",fx:"blur"}],
-["Which movie is this?","Die Hard",["Lethal Weapon","Die Hard 2","Violent Night"],"Die Hard came out in July 1988.",{img:"assets/media/die-hard.jpg",fx:"zoom"}],
-["Which movie is this?","How the Grinch Stole Christmas",["Rudolph the Red-Nosed Reindeer","Frosty the Snowman","Elf"],"Jim Carrey plays the Grinch.",{img:"assets/media/grinch.jpg",fx:"blur"}],
-["Which movie is this?","The Polar Express",["Arthur Christmas","Klaus","The Christmas Chronicles"],"Tom Hanks plays six different characters.",{img:"assets/media/polar-express.jpg",fx:"zoom"}],
-["Which movie is this?","The Nightmare Before Christmas",["Corpse Bride","Gremlins","Beetlejuice"],"Danny Elfman sings Jack’s songs.",{img:"assets/media/nightmare-before-christmas.jpg",fx:"blur"}],
-["Which movie is this?","The Muppet Christmas Carol",["Scrooged","Mickey’s Christmas Carol","A Muppet Family Christmas"],"Michael Caine plays Scrooge.",{img:"assets/media/muppet-christmas-carol.jpg",fx:"zoom"}],
-["Which movie is this?","The Santa Clause",["Jack Frost","Elf","Fred Claus"],"Tim Allen plays Scott Calvin.",{img:"assets/media/santa-clause.jpg",fx:"blur"}],
-["Which movie is this?","Gremlins",["Krampus","Batman Returns","Ghostbusters"],"Steven Spielberg produced it.",{img:"assets/media/gremlins.jpg",fx:"zoom"}],
-["Which movie is this?","Love Actually",["The Holiday","Last Christmas","Bridget Jones’s Diary"],"It follows a whole bunch of love stories at once, all leading up to Christmas.",{img:"assets/media/love-actually.jpg",fx:"blur"}],
-["Which movie is this?","It’s a Wonderful Life",["Miracle on 34th Street","Holiday Inn","The Bishop’s Wife"],"Jimmy Stewart said it was his favorite of all his movies.",{img:"assets/media/its-a-wonderful-life.jpg",fx:"blur"}],
-["Which movie is this?","Miracle on 34th Street",["It’s a Wonderful Life","White Christmas","The Santa Clause"],"The parade scenes were filmed at the real 1946 Macy’s Thanksgiving Day Parade.",{img:"assets/media/miracle-on-34th-street.jpg",fx:"zoom"}],
-["Which movie is this?","White Christmas",["Holiday Inn","It’s a Wonderful Life","Christmas in Connecticut"],"It was the first movie released in VistaVision.",{img:"assets/media/white-christmas.jpg",fx:"blur"}],
-["Which movie is this?","Scrooged",["Trading Places","Ghostbusters","A Christmas Carol"],"Karen Allen and Bobcat Goldthwait co-star.",{img:"assets/media/scrooged.jpg",fx:"zoom"}],
-["Which movie is this?","Jingle All the Way",["The Santa Clause","Kindergarten Cop","Christmas with the Kranks"],"It’s set in Minneapolis.",{img:"assets/media/jingle-all-the-way.jpg",fx:"blur"}],
-["Which movie is this?","Bad Santa",["Fred Claus","The Santa Clause","Violent Night"],"The Coen brothers were executive producers.",{img:"assets/media/bad-santa.jpg",fx:"blur"}],
-["Which movie is this?","Krampus",["Gremlins","Black Christmas","The Nightmare Before Christmas"],"It was directed by Michael Dougherty, who also made Trick ’r Treat.",{img:"assets/media/krampus.jpg",fx:"zoom"}],
-["Which movie is this?","The Holiday",["Love Actually","Last Christmas","Four Christmases"],"Kate Winslet’s English cottage was built just for the movie.",{img:"assets/media/the-holiday.jpg",fx:"blur"}],
-["Which movie is this?","Trading Places",["Coming to America","Scrooged","Beverly Hills Cop"],"Jamie Lee Curtis won a BAFTA for her role.",{img:"assets/media/trading-places.jpg",fx:"zoom"}],
-["Which movie is this?","Batman Returns",["Batman Forever","Edward Scissorhands","Gremlins 2"],"Christopher Walken plays the villain, Max Shreck.",{img:"assets/media/batman-returns.jpg",fx:"blur"}],
-["Which movie is this?","Home Alone 2: Lost in New York",["Home Alone","Elf","Miracle on 34th Street"],"Parts of it were filmed at the real Plaza Hotel.",{img:"assets/media/home-alone-2.jpg",fx:"zoom"}],
-["Which movie is this?","Fred Claus",["Bad Santa","The Santa Clause 2","Elf"],"Vince Vaughn and Paul Giamatti play the Claus brothers.",{img:"assets/media/fred-claus.jpg",fx:"blur"}]
+["Which movie is this?","Home Alone",["Home Alone 2","Christmas Vacation","Jingle All the Way"],"Kevin’s house is a real home in Winnetka, Illinois.",{img:"assets/media/home-alone.png",fx:"blur"}],
+["Which movie is this?","Elf",["The Santa Clause","Fred Claus","Jack Frost"],"The North Pole scenes were inspired by the old Rankin/Bass TV specials.",{img:"assets/media/elf.png",fx:"blur"}],
+["Which movie is this?","A Christmas Story",["Christmas Vacation","Scrooged","Home Alone"],"The house used for the outside shots is in Cleveland, and it’s now a museum.",{img:"assets/media/a-christmas-story.png",fx:"blur"}],
+["Which movie is this?","Christmas Vacation",["Deck the Halls","Christmas with the Kranks","Home Alone"],"Chevy Chase plays Clark Griswold.",{img:"assets/media/christmas-vacation.png",fx:"blur"}],
+["Which movie is this?","Die Hard",["Lethal Weapon","Die Hard 2","Violent Night"],"Die Hard came out in July 1988.",{img:"assets/media/die-hard.png",fx:"zoom"}],
+["Which movie is this?","How the Grinch Stole Christmas",["Rudolph the Red-Nosed Reindeer","Frosty the Snowman","Elf"],"Jim Carrey plays the Grinch.",{img:"assets/media/grinch.png",fx:"blur"}],
+["Which movie is this?","The Polar Express",["Arthur Christmas","Klaus","The Christmas Chronicles"],"Tom Hanks plays six different characters.",{img:"assets/media/polar-express.png",fx:"zoom"}],
+["Which movie is this?","The Nightmare Before Christmas",["Corpse Bride","Gremlins","Beetlejuice"],"Danny Elfman sings Jack’s songs.",{img:"assets/media/nightmare-before-christmas.png",fx:"blur"}],
+["Which movie is this?","The Muppet Christmas Carol",["Scrooged","Mickey’s Christmas Carol","A Muppet Family Christmas"],"Michael Caine plays Scrooge.",{img:"assets/media/muppet-christmas-carol.png",fx:"zoom"}],
+["Which movie is this?","The Santa Clause",["Jack Frost","Elf","Fred Claus"],"Tim Allen plays Scott Calvin.",{img:"assets/media/santa-clause.png",fx:"blur"}],
+["Which movie is this?","Gremlins",["Krampus","Batman Returns","Ghostbusters"],"Steven Spielberg produced it.",{img:"assets/media/gremlins.png",fx:"zoom"}],
+["Which movie is this?","Love Actually",["The Holiday","Last Christmas","Bridget Jones’s Diary"],"It follows a whole bunch of love stories at once, all leading up to Christmas.",{img:"assets/media/love-actually.png",fx:"blur"}],
+["Which movie is this?","It’s a Wonderful Life",["Miracle on 34th Street","Holiday Inn","The Bishop’s Wife"],"Jimmy Stewart said it was his favorite of all his movies.",{img:"assets/media/its-a-wonderful-life.png",fx:"blur"}],
+["Which movie is this?","Miracle on 34th Street",["It’s a Wonderful Life","White Christmas","The Santa Clause"],"The parade scenes were filmed at the real 1946 Macy’s Thanksgiving Day Parade.",{img:"assets/media/miracle-on-34th-street.png",fx:"zoom"}],
+["Which movie is this?","White Christmas",["Holiday Inn","It’s a Wonderful Life","Christmas in Connecticut"],"It was the first movie released in VistaVision.",{img:"assets/media/white-christmas.png",fx:"blur"}],
+["Which movie is this?","Scrooged",["Trading Places","Ghostbusters","A Christmas Carol"],"Karen Allen and Bobcat Goldthwait co-star.",{img:"assets/media/scrooged.png",fx:"zoom"}],
+["Which movie is this?","Jingle All the Way",["The Santa Clause","Kindergarten Cop","Christmas with the Kranks"],"It’s set in Minneapolis.",{img:"assets/media/jingle-all-the-way.png",fx:"blur"}],
+["Which movie is this?","Bad Santa",["Fred Claus","The Santa Clause","Violent Night"],"The Coen brothers were executive producers.",{img:"assets/media/bad-santa.png",fx:"blur"}],
+["Which movie is this?","Krampus",["Gremlins","Black Christmas","The Nightmare Before Christmas"],"It was directed by Michael Dougherty, who also made Trick ’r Treat.",{img:"assets/media/krampus.png",fx:"zoom"}],
+["Which movie is this?","The Holiday",["Love Actually","Last Christmas","Four Christmases"],"Kate Winslet’s English cottage was built just for the movie.",{img:"assets/media/the-holiday.png",fx:"blur"}],
+["Which movie is this?","Trading Places",["Coming to America","Scrooged","Beverly Hills Cop"],"Jamie Lee Curtis won a BAFTA for her role.",{img:"assets/media/trading-places.png",fx:"zoom"}],
+["Which movie is this?","Batman Returns",["Batman Forever","Edward Scissorhands","Gremlins 2"],"Christopher Walken plays the villain, Max Shreck.",{img:"assets/media/batman-returns.png",fx:"blur"}],
+["Which movie is this?","Home Alone 2: Lost in New York",["Home Alone","Elf","Miracle on 34th Street"],"Parts of it were filmed at the real Plaza Hotel.",{img:"assets/media/home-alone-2.png",fx:"zoom"}],
+["Which movie is this?","Fred Claus",["Bad Santa","The Santa Clause 2","Elf"],"Vince Vaughn and Paul Giamatti play the Claus brothers.",{img:"assets/media/fred-claus.png",fx:"blur"}]
 ]},
 {id:"soundbites",kind:"media",title:"Soundbites",sub:"Name the movie from the sound clip",lead:"Listen! Which movie?",
  rule:"Listen to the clip on the TV. The sooner you answer, the more you score.",tough:"111212121212",qs:[
@@ -493,18 +493,18 @@ window.ROUNDS = [
  rule:"The picture starts blurry and gets clearer. 30 seconds a picture. No points lost, ever!",tough:"111111212121",
  emoji:"🖼️⛄🦌🎄",c1:"#2a64c4",c2:"#ffd166",
  sillies:["Make the face of the character you think it is!","Pretend to be a snowman melting in the sun!","Do your best jolly Santa belly laugh!"],qs:[
-["Which movie is this?","Frosty the Snowman",["Frozen","The Snowman","Rudolph the Red-Nosed Reindeer"],"It first aired on TV in 1969.",{img:"assets/media/kid-frosty.jpg",fx:"blur"}],
-["Which movie is this?","Rudolph the Red-Nosed Reindeer",["Frosty the Snowman","Santa Claus Is Comin’ to Town","Arthur Christmas"],"The puppets were animated one tiny move at a time, in Japan.",{img:"assets/media/kid-rudolph.jpg",fx:"blur"}],
-["Which movie is this?","A Charlie Brown Christmas",["A Garfield Christmas","Frosty the Snowman","The Grinch"],"It first aired in 1965 and won an Emmy.",{img:"assets/media/kid-charlie-brown.jpg",fx:"blur"}],
-["Which movie is this?","Arthur Christmas",["Klaus","The Polar Express","Rise of the Guardians"],"Santa’s sleigh in this movie is a giant high-tech ship called the S-1.",{img:"assets/media/kid-arthur-christmas.jpg",fx:"zoom"}],
-["Which movie is this?","Klaus",["Arthur Christmas","The Polar Express","Frozen"],"It won the BAFTA award for best animated film.",{img:"assets/media/kid-klaus.jpg",fx:"blur"}],
-["Which movie is this?","The Grinch (2018)",["Frosty the Snowman","Shrek the Halls","Klaus"],"Benedict Cumberbatch is the voice of the Grinch.",{img:"assets/media/kid-grinch.jpg",fx:"blur"}],
-["Which movie is this?","Mickey’s Christmas Carol",["The Muppet Christmas Carol","A Charlie Brown Christmas","Frosty the Snowman"],"Scrooge McDuck plays Ebenezer Scrooge.",{img:"assets/media/kid-mickeys-christmas-carol.jpg",fx:"zoom"}],
-["Which movie is this?","Olaf’s Frozen Adventure",["Frosty the Snowman","The Snowman","Shrek the Halls"],"It played in movie theaters before Coco.",{img:"assets/media/kid-olaf.jpg",fx:"blur"}],
-["Which movie is this?","Shrek the Halls",["The Grinch (2018)","Arthur Christmas","Olaf’s Frozen Adventure"],"It was a TV special that first aired in 2007.",{img:"assets/media/kid-shrek-the-halls.jpg",fx:"zoom"}],
-["Which movie is this?","The Snowman",["Frosty the Snowman","Olaf’s Frozen Adventure","The Polar Express"],"The song “Walking in the Air” comes from this movie.",{img:"assets/media/kid-the-snowman.jpg",fx:"blur"}],
-["Which movie is this?","The Year Without a Santa Claus",["Santa Claus Is Comin’ to Town","Rudolph the Red-Nosed Reindeer","Frosty the Snowman"],"Mickey Rooney is the voice of Santa.",{img:"assets/media/kid-year-without-a-santa-claus.jpg",fx:"zoom"}],
-["Which movie is this?","Rise of the Guardians",["Arthur Christmas","Klaus","The Polar Express"],"Santa is called North, and his tattoos say Naughty and Nice.",{img:"assets/media/kid-rise-of-the-guardians.jpg",fx:"blur"}]
+["Which movie is this?","Frosty the Snowman",["Frozen","The Snowman","Rudolph the Red-Nosed Reindeer"],"It first aired on TV in 1969.",{img:"assets/media/kid-frosty.png",fx:"blur"}],
+["Which movie is this?","Rudolph the Red-Nosed Reindeer",["Frosty the Snowman","Santa Claus Is Comin’ to Town","Arthur Christmas"],"The puppets were animated one tiny move at a time, in Japan.",{img:"assets/media/kid-rudolph.png",fx:"blur"}],
+["Which movie is this?","A Charlie Brown Christmas",["A Garfield Christmas","Frosty the Snowman","The Grinch"],"It first aired in 1965 and won an Emmy.",{img:"assets/media/kid-charlie-brown.png",fx:"blur"}],
+["Which movie is this?","Arthur Christmas",["Klaus","The Polar Express","Rise of the Guardians"],"Santa’s sleigh in this movie is a giant high-tech ship called the S-1.",{img:"assets/media/kid-arthur-christmas.png",fx:"zoom"}],
+["Which movie is this?","Klaus",["Arthur Christmas","The Polar Express","Frozen"],"It won the BAFTA award for best animated film.",{img:"assets/media/kid-klaus.png",fx:"blur"}],
+["Which movie is this?","The Grinch (2018)",["Frosty the Snowman","Shrek the Halls","Klaus"],"Benedict Cumberbatch is the voice of the Grinch.",{img:"assets/media/kid-grinch.png",fx:"blur"}],
+["Which movie is this?","Mickey’s Christmas Carol",["The Muppet Christmas Carol","A Charlie Brown Christmas","Frosty the Snowman"],"Scrooge McDuck plays Ebenezer Scrooge.",{img:"assets/media/kid-mickeys-christmas-carol.png",fx:"zoom"}],
+["Which movie is this?","Olaf’s Frozen Adventure",["Frosty the Snowman","The Snowman","Shrek the Halls"],"It played in movie theaters before Coco.",{img:"assets/media/kid-olaf.png",fx:"blur"}],
+["Which movie is this?","Shrek the Halls",["The Grinch (2018)","Arthur Christmas","Olaf’s Frozen Adventure"],"It was a TV special that first aired in 2007.",{img:"assets/media/kid-shrek-the-halls.png",fx:"zoom"}],
+["Which movie is this?","The Snowman",["Frosty the Snowman","Olaf’s Frozen Adventure","The Polar Express"],"The song “Walking in the Air” comes from this movie.",{img:"assets/media/kid-the-snowman.png",fx:"blur"}],
+["Which movie is this?","The Year Without a Santa Claus",["Santa Claus Is Comin’ to Town","Rudolph the Red-Nosed Reindeer","Frosty the Snowman"],"Mickey Rooney is the voice of Santa.",{img:"assets/media/kid-year-without-a-santa-claus.png",fx:"zoom"}],
+["Which movie is this?","Rise of the Guardians",["Arthur Christmas","Klaus","The Polar Express"],"Santa is called North, and his tattoos say Naughty and Nice.",{img:"assets/media/kid-rise-of-the-guardians.png",fx:"blur"}]
 ]},
 {id:"kidworkshop",kind:"kid",title:"Santa’s Workshop",sub:"Christmas questions for little elves",timer:30,
  rule:"30 seconds per question. No points lost, ever!",tough:"11111121111211",

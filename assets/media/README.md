@@ -4,15 +4,15 @@ Put pictures, sound clips and video clips here with the **exact** file names lis
 
 These are for your own party at home. Use clips you have the right to use (for example, ones you recorded yourself from movies you own).
 
-## The Frame Game (pictures, JPG)
+## The Frame Game (pictures, PNG)
 A still from each movie. It starts blurry (or zoomed in) and clears up as time runs out.
-`home-alone.jpg`, `elf.jpg`, `a-christmas-story.jpg`, `christmas-vacation.jpg`, `die-hard.jpg`, `grinch.jpg`, `polar-express.jpg`, `nightmare-before-christmas.jpg`, `muppet-christmas-carol.jpg`, `santa-clause.jpg`, `gremlins.jpg`, `love-actually.jpg`, `its-a-wonderful-life.jpg`, `miracle-on-34th-street.jpg`, `white-christmas.jpg`, `scrooged.jpg`, `jingle-all-the-way.jpg`, `bad-santa.jpg`, `krampus.jpg`, `the-holiday.jpg`, `trading-places.jpg`, `batman-returns.jpg`, `home-alone-2.jpg`, `fred-claus.jpg`
+`home-alone.png`, `elf.png`, `a-christmas-story.png`, `christmas-vacation.png`, `die-hard.png`, `grinch.png`, `polar-express.png`, `nightmare-before-christmas.png`, `muppet-christmas-carol.png`, `santa-clause.png`, `gremlins.png`, `love-actually.png`, `its-a-wonderful-life.png`, `miracle-on-34th-street.png`, `white-christmas.png`, `scrooged.png`, `jingle-all-the-way.png`, `bad-santa.png`, `krampus.png`, `the-holiday.png`, `trading-places.png`, `batman-returns.png`, `home-alone-2.png`, `fred-claus.png`
 
-About 1920×1080 is ideal (sizes can vary a bit). Avoid frames with the title or other on-screen text.
+About 1920×1080 is ideal (sizes can vary a bit). PNG is expected; a JPG with the same name (like `elf.jpg`) also works. Keep each under about 2 MB so it loads quickly. Avoid frames with the title or other on-screen text.
 
-## Kid Frame Game (pictures, JPG)
+## Kid Frame Game (pictures, PNG)
 The same idea for kid mode: 30 seconds a picture, no points lost.
-`kid-frosty.jpg`, `kid-rudolph.jpg`, `kid-charlie-brown.jpg`, `kid-arthur-christmas.jpg`, `kid-klaus.jpg`, `kid-grinch.jpg`, `kid-mickeys-christmas-carol.jpg`, `kid-olaf.jpg`, `kid-shrek-the-halls.jpg`, `kid-the-snowman.jpg`, `kid-year-without-a-santa-claus.jpg`, `kid-rise-of-the-guardians.jpg`
+`kid-frosty.png`, `kid-rudolph.png`, `kid-charlie-brown.png`, `kid-arthur-christmas.png`, `kid-klaus.png`, `kid-grinch.png`, `kid-mickeys-christmas-carol.png`, `kid-olaf.png`, `kid-shrek-the-halls.png`, `kid-the-snowman.png`, `kid-year-without-a-santa-claus.png`, `kid-rise-of-the-guardians.png`
 
 ## Fireplace (MP4)
 `fireplace.mp4` loops, muted, in the fireplace between rounds.
