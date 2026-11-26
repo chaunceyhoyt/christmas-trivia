@@ -6,7 +6,16 @@ These are for your own party at home. Use clips you have the right to use (for e
 
 ## The Frame Game (pictures, JPG)
 A still from each movie. It starts blurry (or zoomed in) and clears up as time runs out.
-`home-alone.jpg`, `elf.jpg`, `a-christmas-story.jpg`, `christmas-vacation.jpg`, `die-hard.jpg`, `grinch.jpg`, `polar-express.jpg`, `nightmare-before-christmas.jpg`, `muppet-christmas-carol.jpg`, `santa-clause.jpg`, `gremlins.jpg`, `love-actually.jpg`
+`home-alone.jpg`, `elf.jpg`, `a-christmas-story.jpg`, `christmas-vacation.jpg`, `die-hard.jpg`, `grinch.jpg`, `polar-express.jpg`, `nightmare-before-christmas.jpg`, `muppet-christmas-carol.jpg`, `santa-clause.jpg`, `gremlins.jpg`, `love-actually.jpg`, `its-a-wonderful-life.jpg`, `miracle-on-34th-street.jpg`, `white-christmas.jpg`, `scrooged.jpg`, `jingle-all-the-way.jpg`, `bad-santa.jpg`, `krampus.jpg`, `the-holiday.jpg`, `trading-places.jpg`, `batman-returns.jpg`, `home-alone-2.jpg`, `fred-claus.jpg`
+
+About 1920×1080 is ideal (sizes can vary a bit). Avoid frames with the title or other on-screen text.
+
+## Kid Frame Game (pictures, JPG)
+The same idea for kid mode: 30 seconds a picture, no points lost.
+`kid-frosty.jpg`, `kid-rudolph.jpg`, `kid-charlie-brown.jpg`, `kid-arthur-christmas.jpg`, `kid-klaus.jpg`, `kid-grinch.jpg`, `kid-mickeys-christmas-carol.jpg`, `kid-olaf.jpg`, `kid-shrek-the-halls.jpg`, `kid-the-snowman.jpg`, `kid-year-without-a-santa-claus.jpg`, `kid-rise-of-the-guardians.jpg`
+
+## Fireplace (MP4)
+`fireplace.mp4` loops, muted, in the fireplace between rounds.
 
 ## Soundbites (MP3)
 A famous line or sound from each movie, about 3–8 seconds.
