@@ -271,7 +271,7 @@
     gif.q = term;
     const box = $("#gifRes"); if (!box) return;
     if (!GIFKEY) { box.innerHTML = `<p class="small">The host hasn’t added a GIPHY key yet.</p>`; return; }
-    box.innerHTML = `<p class="small">Looking for Christmas GIFs…</p>`;
+    box.innerHTML = `<p class="small">Looking for Christmas GIFs…</p>`; box.dataset.k = "";
     const id = ++gifReq;
     const q = /christmas|xmas/i.test(term) ? term : "christmas " + term;
     /* Reuse recent results for the same search, so GIPHY's hourly limit lasts the whole party. */
@@ -288,8 +288,12 @@
         drawGifs();
       }).catch(() => { if (id === gifReq && $("#gifRes")) $("#gifRes").innerHTML = `<p class="small">Couldn’t reach GIPHY. Check your connection and try again.</p>`; });
   }
-  function drawGifs() {
+  function drawGifs(force) {
     const box = $("#gifRes"); if (!box) return;
+    /* Only redraw when the results or the pick changed, so a tap never lands on a grid being replaced. */
+    const k = gif.q + "|" + gif.results.length + "|" + gif.results.indexOf(gif.sel) + "|" + (gif.results[0] || {}).s;
+    if (!force && box.dataset.k === k && box.children.length) return;
+    box.dataset.k = k;
     box.innerHTML = gif.results.length ? gif.results.map((x, i) => `<button class="gif-opt${gif.sel === x ? " on" : ""}" data-gif="${i}"><img src="${esc(x.s)}" alt="" loading="lazy"></button>`).join("")
       : `<p class="small">No Christmas GIFs for “${esc(gif.q)}”. Try another word.</p>`;
   }
@@ -502,7 +506,7 @@
       return;
     }
     const go = e.target.closest("[data-gif]");
-    if (go && S && S.phase === "gifpick") { gif.sel = gif.results[+go.dataset.gif]; drawGifs(); showSel(); $("#gifSel").scrollIntoView({ behavior: "smooth", block: "nearest" }); return; }
+    if (go && S && S.phase === "gifpick") { gif.sel = gif.results[+go.dataset.gif]; document.querySelectorAll(".gif-opt.on").forEach(b => b.classList.remove("on")); go.classList.add("on"); $("#gifRes").dataset.k = gif.q + "|" + gif.results.length + "|" + gif.results.indexOf(gif.sel) + "|" + (gif.results[0] || {}).s; showSel(); $("#gifSel").scrollIntoView({ behavior: "smooth", block: "nearest" }); return; }
     const gq = e.target.closest("[data-gq]");
     if (gq && S && S.phase === "gifpick") { const q = $("#gifQ"); if (q) q.value = gq.dataset.gq; searchGif(gq.dataset.gq); return; }
     const gv = e.target.closest("[data-gv]");
