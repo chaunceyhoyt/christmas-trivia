@@ -20,7 +20,9 @@ Check it worked: `ffmpeg -version` and `python --version` (on a Mac, `python3 --
 ## Easiest: drag and drop
 
 1. **Windows:** drag one or more movie files, **or movie folders**, onto **`Drop movies here.bat`** in this folder.
-   A movie's folder (like `Alien (1979)` with the posters, .nfo files and the movie inside) uses the biggest video file in it (any type: mkv, mp4, avi…) and names the movie after the folder; samples, trailers and extras are skipped. Drop a folder full of movie folders and it does every movie in it, one after another.
+   A movie's folder (like `Alien (1979)` with the posters, .nfo files and the movie inside) uses the biggest video file in it (any type: mkv, mp4, avi…) and names the movie after the folder; samples, trailers and extras are skipped. Drop a folder full of movie folders and it does every movie in it, one after another. Movies that already have all their files are skipped right away, so you can drop your whole movies folder again any time to fill gaps.
+
+   **Dropping lots of folders at once and nothing happens?** Windows can only pass about 8,000 characters of file paths to a .bat file, and long network paths use that up after a few dozen folders. When it's over the limit, Windows silently does nothing. Drop the one folder that holds them all instead.
    **Mac:** double-click **`Drop movies here.command`**, drag movies into the window that opens and press Return.
 2. It makes **3 versions of every file**, each from a different part of the movie: 3 pictures, 3 sound clips and 3 video clips (plus 3 kid pictures for Christmas movies that have their own). They go straight into that movie's own folder in your media folder (`media_folder` in `party\settings.ini`), already named the way the game reads them:
 

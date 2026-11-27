@@ -156,6 +156,11 @@ def do_movie(path, rows, row=None, root=None, name=None):
     except OSError:
         print(f"\nCan't write to {folder}. Is the network drive on? Open it in File Explorer once, then try again.")
         return
+    # Skip quickly when this movie already has every file (handy when re-dropping a whole library).
+    wanted = [(r.strip(), n) for col, _, _ in KINDS for r in [row.get(col) or ""] if r.strip() for n in range(1, CHOICES + 1)]
+    if all(os.path.exists(os.path.join(folder, f"{os.path.splitext(r)[0]}_{n}{os.path.splitext(r)[1]}")) for r, n in wanted):
+        print(f"\n{row['movie']}: all done already, skipping")
+        return
     total = duration(path)
     print(f"\n{row['movie']}  ({os.path.basename(path)}, {fmt_time(total)} long)")
     log = []
@@ -285,7 +290,9 @@ def main():
             jobs.append((p, None))
     if len(jobs) > 1:
         print(f"{len(jobs)} movies to do.")
-    for p, name in jobs:
+    for i, (p, name) in enumerate(jobs, 1):
+        if len(jobs) > 1:
+            print(f"\n[{i} of {len(jobs)}]", end="")
         try:
             do_movie(p, rows, name=name)
         except Exception as e:
