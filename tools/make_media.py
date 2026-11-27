@@ -2,9 +2,13 @@
 """
 Make the Frame Game pictures, Soundbites and Clip Show clips from your own movie files.
 
-Fill in media-list.csv (the movie_file column at least), then run:
+Put your movies in one folder (subfolders are fine), then run:
 
     python make_media.py media-list.csv --movies "/path/to/your/movies"
+
+It finds each movie's file by its title, so you don't have to type file names. Add --check
+first to see which file it picked for each movie. If it picks the wrong one, put the right
+file name in that row's movie_file column.
 
 For each row it writes, into ../assets/media (next to this tools folder):
   - frame_png   a still picture, about 1920x1080
@@ -34,6 +38,64 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_OUT = os.path.normpath(os.path.join(HERE, "..", "assets", "media"))
 MAX_PNG_BYTES = 2_500_000   # bigger pictures load slowly on the TV
 DARK_LEVEL = 35             # average brightness (0-255) below which a frame counts as too dark
+
+
+VIDEO_EXT = {".mp4", ".mkv", ".m4v", ".avi", ".mov", ".wmv", ".webm", ".ts", ".mpg", ".mpeg"}
+STOP = {"the", "a", "an", "of", "and", "to", "in", "is"}
+# Words that often appear in movie file names but aren't part of the title.
+JUNK = {"1080p", "720p", "2160p", "4k", "uhd", "hd", "sd", "bluray", "blu", "ray", "brrip", "bdrip", "webrip", "web", "dl",
+        "webdl", "hdrip", "dvdrip", "dvd", "x264", "x265", "h264", "h265", "hevc", "avc", "aac", "ac3", "dts", "5", "1",
+        "remastered", "extended", "edition", "directors", "cut", "theatrical", "imax", "proper", "repack", "yify", "yts",
+        "rarbg", "mp4", "mkv", "eng", "english", "subs", "multi", "hdr", "sdr", "10bit", "8bit", "atmos", "truehd"}
+
+
+def words(text):
+    text = text.lower().replace("’", "").replace("'", "").replace("&", " and ")
+    return [w for w in re.split(r"[^a-z0-9]+", text) if w]
+
+
+def find_movies(folder):
+    found = []
+    for root, _, files in os.walk(folder):
+        for fn in files:
+            if os.path.splitext(fn)[1].lower() in VIDEO_EXT and not fn.startswith("._"):
+                found.append(os.path.join(root, fn))
+    return found
+
+
+def match_score(title, path):
+    """How well a file name fits a movie title. None if a word of the title is missing."""
+    need = [w for w in words(title) if w not in STOP]
+    have = [w for w in words(os.path.splitext(os.path.basename(path))[0]) if w not in STOP and w not in JUNK]
+    def same(h, w):
+        # Exact, or the same word spelled slightly differently ("comin" and "coming"), not just a shared start ("night" and "nightmare").
+        return h == w or (min(len(h), len(w)) >= 4 and abs(len(h) - len(w)) <= 2 and (h.startswith(w) or w.startswith(h)))
+    if not need or not all(any(same(h, w) for h in have) for w in need):
+        return None
+    extra = [h for h in have if not any(same(h, w) for w in need)]
+    # Extra words make a match less likely (Home Alone 2 is not Home Alone). A year counts for very little.
+    return sum(0.2 if re.fullmatch(r"(19|20)\d\d", h) else 1.0 for h in extra)
+
+
+def best_fit(movies, titles):
+    """For each file, how well its best-fitting title matches, so a file goes to the title it fits best
+    (Frosty The Snowman.mp4 belongs to Frosty the Snowman, not The Snowman)."""
+    best = {}
+    for p in movies:
+        scores = [sc for t in titles for sc in [match_score(t, p)] if sc is not None]
+        if scores:
+            best[p] = min(scores)
+    return best
+
+
+def auto_match(title, movies, best):
+    """Pick the movie file for a title. Returns (path, note)."""
+    scored = sorted((sc, p) for p in movies for sc in [match_score(title, p)] if sc is not None and sc <= best.get(p, 99) + 0.01)
+    if not scored:
+        return None, "no file found"
+    if len(scored) > 1 and abs(scored[0][0] - scored[1][0]) < 0.01:
+        return None, "more than one file fits: " + ", ".join(os.path.basename(p) for _, p in scored[:3]) + ". Put the right one in movie_file."
+    return scored[0][1], ""
 
 
 def run(cmd):
@@ -145,6 +207,7 @@ def main():
     ap.add_argument("--candidates", type=int, default=0, metavar="N",
                     help="for frames with no time, save N random options to a 'candidates' folder to choose from instead")
     ap.add_argument("--overwrite", action="store_true", help="replace files that already exist")
+    ap.add_argument("--check", action="store_true", help="just show which movie file each row would use, and make nothing")
     args = ap.parse_args()
 
     need("ffmpeg"); need("ffprobe")
@@ -152,17 +215,27 @@ def main():
     with open(args.csv, newline="", encoding="utf-8-sig") as f:
         rows = list(csv.DictReader(f))
 
-    chosen, made, skipped, problems = [], 0, 0, []
+    movies = find_movies(args.movies)
+    best = best_fit(movies, {(r.get("movie") or "").strip() for r in rows if (r.get("movie") or "").strip()})
+    print(f"Found {len(movies)} movie file{'s' if len(movies) != 1 else ''} in {os.path.abspath(args.movies)}")
+    chosen, made, skipped, problems, missing = [], 0, 0, [], []
     for row in rows:
         name = (row.get("movie") or "").strip()
-        if args.movie and args.movie.lower() not in name.lower():
+        if not name or (args.movie and args.movie.lower() not in name.lower()):
             continue
         src = (row.get("movie_file") or "").strip().strip('"')
-        if not src:
-            continue
-        movie = src if os.path.isabs(src) else os.path.join(args.movies, src)
-        if not os.path.exists(movie):
-            problems.append(f"{name}: can't find the movie file {movie}")
+        if src:
+            movie = src if os.path.isabs(src) else os.path.join(args.movies, src)
+            if not os.path.exists(movie):
+                problems.append(f"{name}: can't find the movie file {movie}")
+                continue
+        else:
+            movie, note = auto_match(name, movies, best)
+            if not movie:
+                (missing if note == "no file found" else problems).append(name if note == "no file found" else f"{name}: {note}")
+                continue
+        if args.check:
+            print(f"  {name:<36} -> {os.path.relpath(movie, args.movies)}")
             continue
         try:
             total = duration(movie)
@@ -255,6 +328,16 @@ def main():
             w.writeheader()
             w.writerows(chosen)
         print(f"\nRandom times used are saved in {log}. Copy any you like into {os.path.basename(args.csv)} to keep them.")
+    if missing:
+        print(f"\nNo movie file found for: {', '.join(sorted(set(missing)))}")
+        print("  (That's fine if you don't have those movies. If you do, check the file name or put it in movie_file.)")
+    if args.check:
+        if problems:
+            print("\nThese need a look:")
+            for p in problems:
+                print("  - " + p)
+        print("\nThat was just a check. Run it again without --check to make the files.")
+        return
     print(f"\nDone: {made} made, {skipped} already there.")
     if problems:
         print("\nThese need a look:")

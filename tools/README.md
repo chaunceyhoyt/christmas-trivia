@@ -17,30 +17,44 @@ You need **Python 3** and **ffmpeg** (a free video tool).
 
 Check it worked: `ffmpeg -version` and `python --version` (on a Mac, `python3 --version`) should both print a version.
 
-## Fill in the list
+## Put your movies in one folder
 
-Open `media-list.csv` in Excel, Numbers or Google Sheets. There's one row per movie, and the file names the game needs are already filled in.
+Any folder works, and subfolders are fine. You **don't** need to rename the files or type their names anywhere: the script matches each movie by its title, so `Home Alone (1990) 1080p BluRay.mkv` is found as Home Alone (and not mixed up with Home Alone 2). Movies you don't have are simply skipped.
 
-| Column | What to put |
-| --- | --- |
-| `movie_file` | The movie's file name, like `Home Alone (1990).mp4`. Required. Rows left blank are skipped. |
-| `frame_time` | When to grab the picture, like `0:52:13`. Blank = a random moment. |
-| `sound_start` | When the famous line starts, like `1:02:33`. Fill this in: a random sound is almost never a good soundbite. |
-| `sound_seconds` | How long the sound clip is. 6 is a good default. |
-| `clip_start` | When the video clip starts. Blank = random. |
-| `clip_seconds` | How long the video clip is. 8 is a good default. |
+## Check the matches first
 
-`what_to_capture` has a suggested scene, line or clip for each movie. Save the file as CSV when you're done.
+Open Terminal or PowerShell in the `tools` folder and run (use `python3` on a Mac):
+
+```
+python make_media.py media-list.csv --movies "C:\Movies" --check
+```
+
+It lists which file it picked for each movie and makes nothing. If one is wrong, or a movie you have wasn't found, open `media-list.csv` and type that file's name in the `movie_file` column for that row. That's the only time you'd need to.
 
 ## Run it
 
-Put the movies in one folder. Open Terminal or PowerShell in the `tools` folder and run (use `python3` on a Mac):
+Same command, without `--check`:
 
 ```
 python make_media.py media-list.csv --movies "C:\Movies"
 ```
 
 The files land in `assets/media`, ready to upload to GitHub.
+
+## Optional: pick your moments
+
+`media-list.csv` opens in Excel, Numbers or Google Sheets. You only need it to choose exact moments:
+
+| Column | What to put |
+| --- | --- |
+| `frame_time` | When to grab the picture, like `0:52:13`. Blank = a random moment. |
+| `sound_start` | When the famous line starts, like `1:02:33`. Fill this in for soundbites: a random sound is almost never a good one. |
+| `sound_seconds` | How long the sound clip is. 6 is the default. |
+| `clip_start` | When the video clip starts. Blank = random. |
+| `clip_seconds` | How long the video clip is. 8 is the default. |
+| `movie_file` | Only if the automatic match picked the wrong file or missed one. |
+
+`what_to_capture` has a suggested scene, line or clip for each movie. Save as CSV when you're done.
 
 ### Handy options
 
