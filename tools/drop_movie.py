@@ -182,7 +182,7 @@ def do_movie(path, rows, row=None, root=None, name=None):
                 else:
                     t = random.uniform(a, b)
                     (make_sound if ext.lower() == ".mp3" else make_clip)(path, t, secs, out)
-                log.append(f"{os.path.basename(out)}\t{fmt_time(t)}\t{os.path.basename(path)}")
+                log.append(f"{os.path.basename(out)}\t{fmt_time(t)}\t{path}")
                 print(f"  {kind} {n}: {os.path.basename(out)}  (from {fmt_time(t)})")
             except Exception as e:  # keep going with the rest
                 print(f"  {kind} {n}: couldn't make it ({e})")

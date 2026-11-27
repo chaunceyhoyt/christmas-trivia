@@ -28,6 +28,7 @@ Needs Python 3 and ffmpeg (which includes ffprobe). See README.md in this folder
 """
 import argparse
 import csv
+import json
 import os
 import random
 import re
@@ -178,22 +179,79 @@ def make_frame(movie, at, out, total, tries=6):
     return out, best[0], True
 
 
-def make_sound(movie, start, secs, out):
+# Speaker layouts ffmpeg reports, and the channels in each (enough to build a good stereo mix).
+LAYOUTS = {"5.1": "FL FR FC LFE BL BR", "5.1(side)": "FL FR FC LFE SL SR", "5.0": "FL FR FC BL BR", "5.0(side)": "FL FR FC SL SR",
+           "6.1": "FL FR FC LFE BC SL SR", "6.1(back)": "FL FR FC LFE BC BL BR", "7.1": "FL FR FC LFE BL BR SL SR",
+           "7.1(wide)": "FL FR FC LFE BL BR FLC FRC", "7.1(wide-side)": "FL FR FC LFE FLC FRC SL SR", "4.0": "FL FR FC BC",
+           "quad": "FL FR BL BR", "quad(side)": "FL FR SL SR", "3.0": "FL FR FC", "2.1": "FL FR LFE", "3.1": "FL FR FC LFE"}
+
+
+def audio_layout(movie):
+    r = run(["ffprobe", "-v", "error", "-select_streams", "a:0", "-show_entries", "stream=channels,channel_layout", "-of", "json", movie])
+    try:
+        st = json.loads(r.stdout)["streams"][0]
+        return int(st.get("channels") or 2), st.get("channel_layout") or ""
+    except (ValueError, KeyError, IndexError):
+        return 2, ""
+
+
+def stereo_mix(movie):
+    """Surround movies: fold down to stereo keeping the center channel (the dialog) clear, instead of ffmpeg's
+    default mix, which can make voices thin or crunchy. Returns a filter, or "" for mono/stereo."""
+    ch, layout = audio_layout(movie)
+    if ch <= 2:
+        return ""
+    names = LAYOUTS.get(layout.lower().replace(" ", ""))
+    if not names:
+        return ""  # an unusual layout: leave it to ffmpeg's own mix (-ac 2)
+    have = set(names.split())
+    def side(f, s_, b, c):
+        terms = [f"0.6*{f}"] if f in have else []
+        if "FC" in have: terms.append("FC")
+        for x in (s_, b, c):
+            if x in have: terms.append(f"0.4*{x}")
+        return "+".join(terms)
+    return f"pan=stereo|FL<{side('FL', 'SL', 'BL', 'FLC')}|FR<{side('FR', 'SR', 'BR', 'FRC')}"
+
+
+def audio_filter(movie, start, secs, fade_in):
+    """Even out the volume without the pumping, crunchy sound of one-pass leveling: measure the clip first,
+    then apply one steady change. Ends with short fades so the clip doesn't click."""
+    mix = stereo_mix(movie)
+    pre = (mix + ",") if mix else ""
+    target = "I=-16:TP=-1.5:LRA=50"
+    r = run(["ffmpeg", "-hide_banner", "-nostats", "-ss", f"{start:.2f}", "-i", movie, "-t", f"{secs:.2f}", "-map", "0:a:0",
+             "-af", f"{pre}loudnorm={target}:print_format=json", "-f", "null", "-"])
     fade = min(0.4, secs / 4)
-    af = f"loudnorm=I=-16:TP=-1.5:LRA=11,afade=t=in:d=0.15,afade=t=out:st={max(0, secs - fade):.2f}:d={fade:.2f}"
+    fades = f"afade=t=in:d={fade_in},afade=t=out:st={max(0, secs - fade):.2f}:d={fade:.2f}"
+    m = re.search(r"\{[^{}]*\"input_i\"[^{}]*\}", r.stderr)
+    try:
+        j = json.loads(m.group(0))
+        if j["input_i"] in ("-inf", "inf") or float(j["input_i"]) < -70:
+            raise ValueError("silent")
+        norm = (f"loudnorm={target}:measured_I={j['input_i']}:measured_TP={j['input_tp']}:measured_LRA={j['input_lra']}"
+                f":measured_thresh={j['input_thresh']}:offset={j['target_offset']}:linear=true")
+    except (AttributeError, ValueError, KeyError):
+        norm = "anull"  # silent or unreadable: leave the level alone
+    return f"{pre}{norm},aresample=48000,{fades}"
+
+
+def make_sound(movie, start, secs, out):
+    af = audio_filter(movie, start, secs, 0.15)
     r = run(["ffmpeg", "-y", "-v", "error", "-ss", f"{start:.2f}", "-i", movie, "-t", f"{secs:.2f}", "-map", "0:a:0",
-             "-vn", "-af", af, "-ac", "2", "-ar", "44100", "-b:a", "160k", out])
+             "-vn", "-af", af, "-ac", "2", "-ar", "48000", "-c:a", "libmp3lame", "-b:a", "224k", out])
     if r.returncode != 0:
         raise RuntimeError(r.stderr.strip().splitlines()[-1] if r.stderr.strip() else "ffmpeg could not save the sound")
 
 
 def make_clip(movie, start, secs, out):
-    fade = min(0.4, secs / 4)
-    af = f"loudnorm=I=-16:TP=-1.5:LRA=11,afade=t=in:d=0.2,afade=t=out:st={max(0, secs - fade):.2f}:d={fade:.2f}"
+    has_audio = run(["ffprobe", "-v", "error", "-select_streams", "a:0", "-show_entries", "stream=index",
+                     "-of", "csv=p=0", movie]).stdout.strip() != ""
+    af = ["-af", audio_filter(movie, start, secs, 0.2), "-ac", "2", "-ar", "48000", "-c:a", "aac", "-b:a", "192k"] if has_audio else []
     r = run(["ffmpeg", "-y", "-v", "error", "-ss", f"{start:.2f}", "-i", movie, "-t", f"{secs:.2f}",
              "-map", "0:v:0", "-map", "0:a:0?", "-vf", "scale=-2:'min(720,ih)'",
              "-c:v", "libx264", "-preset", "medium", "-crf", "26", "-pix_fmt", "yuv420p",
-             "-af", af, "-c:a", "aac", "-b:a", "128k", "-movflags", "+faststart", out])
+             *af, "-movflags", "+faststart", out])
     if r.returncode != 0:
         raise RuntimeError(r.stderr.strip().splitlines()[-1] if r.stderr.strip() else "ffmpeg could not save the clip")
 
