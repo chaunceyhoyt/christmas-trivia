@@ -435,7 +435,7 @@ window.ROUNDS = [
 /* ---------- Media rounds: drop files into assets/media/ with these exact names (see assets/media/README.md).
    Questions whose file is missing are skipped. A round with no files at all is hidden. ---------- */
 {id:"framegame",kind:"media",title:"The Frame Game",sub:"Guess the movie from one blurry frame",lead:"Which movie is this?",
- rule:"The picture starts blurry and clears up as time runs out. Guess early for more points!",tough:"112112121212112222232312",qs:[
+ rule:"The picture starts blurry and clears up as time runs out. Guess early for more points!",tough:"11211212121211222223231223322322",qs:[
 ["Which movie is this?","Home Alone",["Home Alone 2","Christmas Vacation","Jingle All the Way"],"Kevin’s house is a real home in Winnetka, Illinois.",{img:"assets/media/home-alone.png",fx:"blur"}],
 ["Which movie is this?","Elf",["The Santa Clause","Fred Claus","Jack Frost"],"The North Pole scenes were inspired by the old Rankin/Bass TV specials.",{img:"assets/media/elf.png",fx:"blur"}],
 ["Which movie is this?","A Christmas Story",["Christmas Vacation","Scrooged","Home Alone"],"The house used for the outside shots is in Cleveland, and it’s now a museum.",{img:"assets/media/a-christmas-story.png",fx:"blur"}],
@@ -459,10 +459,18 @@ window.ROUNDS = [
 ["Which movie is this?","Trading Places",["Coming to America","Scrooged","Beverly Hills Cop"],"Jamie Lee Curtis won a BAFTA for her role.",{img:"assets/media/trading-places.png",fx:"zoom"}],
 ["Which movie is this?","Batman Returns",["Batman Forever","Edward Scissorhands","Gremlins 2"],"Christopher Walken plays the villain, Max Shreck.",{img:"assets/media/batman-returns.png",fx:"blur"}],
 ["Which movie is this?","Home Alone 2: Lost in New York",["Home Alone","Elf","Miracle on 34th Street"],"Parts of it were filmed at the real Plaza Hotel.",{img:"assets/media/home-alone-2.png",fx:"zoom"}],
-["Which movie is this?","Fred Claus",["Bad Santa","The Santa Clause 2","Elf"],"Vince Vaughn and Paul Giamatti play the Claus brothers.",{img:"assets/media/fred-claus.png",fx:"blur"}]
+["Which movie is this?","Fred Claus",["Bad Santa","The Santa Clause 2","Elf"],"Vince Vaughn and Paul Giamatti play the Claus brothers.",{img:"assets/media/fred-claus.png",fx:"blur"}],
+["Which movie is this?","Four Christmases",["The Holiday","Christmas with the Kranks","Fred Claus"],"Reese Witherspoon and Vince Vaughn race to four family Christmases in one day.",{img:"assets/media/four-christmases.png",fx:"blur"}],
+["Which movie is this?","Christmas with the Kranks",["Deck the Halls","Four Christmases","Jingle All the Way"],"It’s based on John Grisham’s novel Skipping Christmas.",{img:"assets/media/christmas-with-the-kranks.png",fx:"zoom"}],
+["Which movie is this?","Deck the Halls",["Christmas with the Kranks","Christmas Vacation","Four Christmases"],"Danny DeVito and Matthew Broderick play feuding neighbors.",{img:"assets/media/deck-the-halls.png",fx:"blur"}],
+["Which movie is this?","Jack Frost",["The Santa Clause","Frosty the Snowman","The Snowman"],"The snowman was built by Jim Henson’s Creature Shop.",{img:"assets/media/jack-frost.png",fx:"zoom"}],
+["Which movie is this?","Last Christmas",["Love Actually","The Holiday","Four Christmases"],"Emma Thompson co-wrote it, and it’s named after the Wham! song.",{img:"assets/media/last-christmas.png",fx:"blur"}],
+["Which movie is this?","The Night Before",["Office Christmas Party","Four Christmases","Bad Santa"],"Michael Shannon plays a very strange drug dealer named Mr. Green.",{img:"assets/media/the-night-before.png",fx:"zoom"}],
+["Which movie is this?","Violent Night",["Bad Santa","Die Hard","Krampus"],"David Harbour plays a Santa who fights off a gang of thieves.",{img:"assets/media/violent-night.png",fx:"blur"}],
+["Which movie is this?","Edward Scissorhands",["Batman Returns","Beetlejuice","The Nightmare Before Christmas"],"Vincent Price plays the inventor who made Edward.",{img:"assets/media/edward-scissorhands.png",fx:"zoom"}]
 ]},
 {id:"soundbites",kind:"media",title:"Soundbites",sub:"Name the movie from the sound clip",lead:"Listen! Which movie?",
- rule:"Listen to the clip on the TV. The sooner you answer, the more you score.",tough:"111212121212",qs:[
+ rule:"Listen to the clip on the TV. The sooner you answer, the more you score.",tough:"11121212121222231121",qs:[
 ["Listen! Which movie?","Home Alone",["Home Alone 2","Christmas Vacation","Jingle All the Way"],"John Williams wrote the score.",{audio:"assets/media/home-alone.mp3"}],
 ["Listen! Which movie?","Elf",["The Santa Clause","Fred Claus","Jack Frost"],"Will Ferrell plays Buddy.",{audio:"assets/media/elf.mp3"}],
 ["Listen! Which movie?","A Christmas Story",["Christmas Vacation","Scrooged","Home Alone"],"Jean Shepherd narrates as grown-up Ralphie.",{audio:"assets/media/a-christmas-story.mp3"}],
@@ -474,10 +482,18 @@ window.ROUNDS = [
 ["Listen! Which movie?","Jingle All the Way",["The Santa Clause","Toy Story","Kindergarten Cop"],"Arnold Schwarzenegger plays Howard Langston.",{audio:"assets/media/jingle-all-the-way.mp3"}],
 ["Listen! Which movie?","It’s a Wonderful Life",["Miracle on 34th Street","White Christmas","Holiday Inn"],"Jimmy Stewart plays George Bailey.",{audio:"assets/media/its-a-wonderful-life.mp3"}],
 ["Listen! Which movie?","Scrooged",["Trading Places","Ghostbusters","Groundhog Day"],"Bill Murray plays Frank Cross.",{audio:"assets/media/scrooged.mp3"}],
-["Listen! Which movie?","Love Actually",["The Holiday","Last Christmas","Notting Hill"],"Bill Nighy plays rocker Billy Mack.",{audio:"assets/media/love-actually.mp3"}]
+["Listen! Which movie?","Love Actually",["The Holiday","Last Christmas","Notting Hill"],"Bill Nighy plays rocker Billy Mack.",{audio:"assets/media/love-actually.mp3"}],
+["Listen! Which movie?","Gremlins",["Krampus","Ghostbusters","The Goonies"],"Gizmo is voiced by Howie Mandel.",{audio:"assets/media/gremlins.mp3"}],
+["Listen! Which movie?","The Muppet Christmas Carol",["Mickey’s Christmas Carol","Scrooged","A Muppet Family Christmas"],"Rizzo the Rat is the one yelling it.",{audio:"assets/media/muppet-christmas-carol.mp3"}],
+["Listen! Which movie?","The Santa Clause",["Elf","Fred Claus","Jack Frost"],"Judy the elf says it to Charlie.",{audio:"assets/media/santa-clause.mp3"}],
+["Listen! Which movie?","Miracle on 34th Street",["It’s a Wonderful Life","White Christmas","The Bishop’s Wife"],"Fred Gailey says it to Doris.",{audio:"assets/media/miracle-on-34th-street.mp3"}],
+["Listen! Which movie?","A Charlie Brown Christmas",["A Garfield Christmas","Frosty the Snowman","Rudolph the Red-Nosed Reindeer"],"Linus says it after reciting from the Bible.",{audio:"assets/media/charlie-brown-christmas.mp3"}],
+["Listen! Which movie?","Frosty the Snowman",["Rudolph the Red-Nosed Reindeer","The Snowman","Jack Frost"],"They’re Frosty’s very first words.",{audio:"assets/media/frosty.mp3"}],
+["Listen! Which movie?","White Christmas",["Holiday Inn","It’s a Wonderful Life","Christmas in Connecticut"],"Bing Crosby and Danny Kaye perform it in drag.",{audio:"assets/media/white-christmas.mp3"}],
+["Listen! Which movie?","Rudolph the Red-Nosed Reindeer",["Frosty the Snowman","Santa Claus Is Comin’ to Town","The Year Without a Santa Claus"],"Yukon Cornelius licks his pickaxe to test for silver and gold.",{audio:"assets/media/rudolph.mp3"}]
 ]},
 {id:"clipshow",kind:"media",title:"Clip Show",sub:"Name the movie from a few seconds of video",lead:"Watch! Which movie?",
- rule:"Watch the clip on the TV. The sooner you answer, the more you score.",tough:"11121212",qs:[
+ rule:"Watch the clip on the TV. The sooner you answer, the more you score.",tough:"11121212121112",qs:[
 ["Watch! Which movie?","Home Alone",["Home Alone 2","Christmas Vacation","Jingle All the Way"],"Macaulay Culkin plays Kevin.",{video:"assets/media/clip-home-alone.mp4"}],
 ["Watch! Which movie?","Elf",["The Santa Clause","Fred Claus","Jack Frost"],"Jon Favreau directed it.",{video:"assets/media/clip-elf.mp4"}],
 ["Watch! Which movie?","A Christmas Story",["Christmas Vacation","Scrooged","Home Alone"],"Bob Clark directed it.",{video:"assets/media/clip-a-christmas-story.mp4"}],
@@ -485,12 +501,18 @@ window.ROUNDS = [
 ["Watch! Which movie?","Die Hard",["Lethal Weapon","Die Hard 2","Violent Night"],"Bruce Willis plays John McClane.",{video:"assets/media/clip-die-hard.mp4"}],
 ["Watch! Which movie?","How the Grinch Stole Christmas",["Rudolph the Red-Nosed Reindeer","Frosty the Snowman","Elf"],"Ron Howard directed the 2000 version.",{video:"assets/media/clip-grinch.mp4"}],
 ["Watch! Which movie?","The Polar Express",["Arthur Christmas","Klaus","The Christmas Chronicles"],"Robert Zemeckis directed it.",{video:"assets/media/clip-polar-express.mp4"}],
-["Watch! Which movie?","The Muppet Christmas Carol",["Scrooged","Mickey’s Christmas Carol","A Muppet Family Christmas"],"Gonzo plays Charles Dickens.",{video:"assets/media/clip-muppet-christmas-carol.mp4"}]
+["Watch! Which movie?","The Muppet Christmas Carol",["Scrooged","Mickey’s Christmas Carol","A Muppet Family Christmas"],"Gonzo plays Charles Dickens.",{video:"assets/media/clip-muppet-christmas-carol.mp4"}],
+["Watch! Which movie?","Gremlins",["Krampus","Ghostbusters","Batman Returns"],"Gizmo multiplies when he gets wet.",{video:"assets/media/clip-gremlins.mp4"}],
+["Watch! Which movie?","Jingle All the Way",["The Santa Clause","Bad Santa","Kindergarten Cop"],"Howard brawls with a gang of knock-off mall Santas.",{video:"assets/media/clip-jingle-all-the-way.mp4"}],
+["Watch! Which movie?","The Nightmare Before Christmas",["Corpse Bride","Beetlejuice","Coraline"],"“What’s This?” plays as Jack discovers Christmas Town.",{video:"assets/media/clip-nightmare-before-christmas.mp4"}],
+["Watch! Which movie?","The Santa Clause",["Elf","Jack Frost","Fred Claus"],"Santa falls off Scott’s roof, and Scott puts on the suit.",{video:"assets/media/clip-santa-clause.mp4"}],
+["Watch! Which movie?","It’s a Wonderful Life",["Miracle on 34th Street","White Christmas","Holiday Inn"],"Zuzu’s petals turn up in George’s pocket.",{video:"assets/media/clip-its-a-wonderful-life.mp4"}],
+["Watch! Which movie?","Scrooged",["Trading Places","Ghostbusters","A Christmas Carol"],"Carol Kane’s Ghost of Christmas Present hits Frank with a toaster.",{video:"assets/media/clip-scrooged.mp4"}]
 ]},
 
 /* ---------- Kid rounds (kid mode). Silly "Jingle Jiggle" challenges pop up between questions. ---------- */
 {id:"kidframes",kind:"kid",title:"Kid Frame Game",sub:"Guess the movie from a blurry picture",lead:"Which movie is this?",timer:30,
- rule:"The picture starts blurry and gets clearer. 30 seconds a picture. No points lost, ever!",tough:"111111212121",
+ rule:"The picture starts blurry and gets clearer. 30 seconds a picture. No points lost, ever!",tough:"111111212121111111",
  emoji:"🖼️⛄🦌🎄",c1:"#2a64c4",c2:"#ffd166",
  sillies:["Make the face of the character you think it is!","Pretend to be a snowman melting in the sun!","Do your best jolly Santa belly laugh!"],qs:[
 ["Which movie is this?","Frosty the Snowman",["Frozen","The Snowman","Rudolph the Red-Nosed Reindeer"],"It first aired on TV in 1969.",{img:"assets/media/kid-frosty.png",fx:"blur"}],
@@ -504,7 +526,13 @@ window.ROUNDS = [
 ["Which movie is this?","Shrek the Halls",["The Grinch (2018)","Arthur Christmas","Olaf’s Frozen Adventure"],"It was a TV special that first aired in 2007.",{img:"assets/media/kid-shrek-the-halls.png",fx:"zoom"}],
 ["Which movie is this?","The Snowman",["Frosty the Snowman","Olaf’s Frozen Adventure","The Polar Express"],"The song “Walking in the Air” comes from this movie.",{img:"assets/media/kid-the-snowman.png",fx:"blur"}],
 ["Which movie is this?","The Year Without a Santa Claus",["Santa Claus Is Comin’ to Town","Rudolph the Red-Nosed Reindeer","Frosty the Snowman"],"Mickey Rooney is the voice of Santa.",{img:"assets/media/kid-year-without-a-santa-claus.png",fx:"zoom"}],
-["Which movie is this?","Rise of the Guardians",["Arthur Christmas","Klaus","The Polar Express"],"Santa is called North, and his tattoos say Naughty and Nice.",{img:"assets/media/kid-rise-of-the-guardians.png",fx:"blur"}]
+["Which movie is this?","Rise of the Guardians",["Arthur Christmas","Klaus","The Polar Express"],"Santa is called North, and his tattoos say Naughty and Nice.",{img:"assets/media/kid-rise-of-the-guardians.png",fx:"blur"}],
+["Which movie is this?","Elf",["The Santa Clause","Arthur Christmas","Jingle All the Way"],"Will Ferrell plays Buddy.",{img:"assets/media/kid-elf.png",fx:"blur"}],
+["Which movie is this?","Home Alone",["Home Alone 2: Lost in New York","Elf","Jingle All the Way"],"Kevin is 8 years old in Home Alone.",{img:"assets/media/kid-home-alone.png",fx:"blur"}],
+["Which movie is this?","The Polar Express",["Arthur Christmas","Klaus","The Christmas Chronicles"],"The train’s number is 1225, for December 25!",{img:"assets/media/kid-polar-express.png",fx:"zoom"}],
+["Which movie is this?","The Christmas Chronicles",["Elf","The Santa Clause","Arthur Christmas"],"Kurt Russell plays Santa.",{img:"assets/media/kid-christmas-chronicles.png",fx:"blur"}],
+["Which movie is this?","Santa Claus Is Comin’ to Town",["Rudolph the Red-Nosed Reindeer","The Year Without a Santa Claus","Frosty the Snowman"],"Fred Astaire tells the story as a mailman.",{img:"assets/media/kid-santa-claus-is-comin-to-town.png",fx:"zoom"}],
+["Which movie is this?","A Garfield Christmas",["A Charlie Brown Christmas","Shrek the Halls","Frosty the Snowman"],"Garfield spends Christmas at Jon’s family farm.",{img:"assets/media/kid-garfield-christmas.png",fx:"blur"}]
 ]},
 {id:"kidworkshop",kind:"kid",title:"Santa’s Workshop",sub:"Christmas questions for little elves",timer:30,
  rule:"30 seconds per question. No points lost, ever!",tough:"11111121111211",
