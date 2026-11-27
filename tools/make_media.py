@@ -217,10 +217,12 @@ def main():
     with open(args.csv, newline="", encoding="utf-8-sig") as f:
         rows = list(csv.DictReader(f))
 
-    folders = args.movies or ["."]
+    # Only search folders you name with --movies. With full paths in movie_file, nothing needs searching.
+    folders = args.movies or []
     movies = [m for folder in folders for m in find_movies(folder)]
     best = best_fit(movies, {(r.get("movie") or "").strip() for r in rows if (r.get("movie") or "").strip()})
-    print(f"Found {len(movies)} movie file{'s' if len(movies) != 1 else ''} in {', '.join(os.path.abspath(f) for f in folders)}")
+    if folders:
+        print(f"Found {len(movies)} movie file{'s' if len(movies) != 1 else ''} in {', '.join(os.path.abspath(f) for f in folders)}")
     chosen, made, skipped, problems, missing = [], 0, 0, [], []
     for row in rows:
         name = (row.get("movie") or "").strip()
@@ -229,10 +231,13 @@ def main():
         src = (row.get("movie_file") or "").strip().strip('"')
         if src:
             # A full path is used as-is; a bare file name is looked for in the --movies folders.
-            movie = src if os.path.isabs(src) else next((os.path.join(f, src) for f in folders if os.path.exists(os.path.join(f, src))), os.path.join(folders[0], src))
+            here = os.path.dirname(os.path.abspath(args.csv))
+            movie = src if os.path.isabs(src) else next((os.path.join(f, src) for f in folders + [here] if os.path.exists(os.path.join(f, src))), os.path.join(here, src))
             if not os.path.exists(movie):
                 problems.append(f"{name}: can't find the movie file {movie}")
                 continue
+        elif not folders:
+            continue  # no movie_file and no --movies folder to look in: skip this movie
         else:
             movie, note = auto_match(name, movies, best)
             if not movie:

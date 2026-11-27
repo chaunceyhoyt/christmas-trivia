@@ -23,6 +23,19 @@ Leave them where they are. Point the script at the folder they're in (subfolders
 
 The output file names (`frame_png`, `kid_frame_png`, `sound_mp3`, `clip_mp4`) are already filled in, one row per movie, so there's nothing to type there. A blank file name just means that movie isn't in that round (Bad Santa is only in The Frame Game, so it has no sound or clip), and the script skips it. You **don't** need to rename, move or list your movie files: the script matches each movie by its title, so `Home Alone (1990) 1080p BluRay.mkv` is found as Home Alone (and not mixed up with Home Alone 2). Movies you don't have are simply skipped.
 
+## If you typed full paths in `movie_file`
+
+You don't need `--movies` at all. In Terminal or PowerShell, go to the folder with the script and run:
+
+```
+python make_media.py media-list.csv --check
+python make_media.py media-list.csv
+```
+
+The first line shows which file each movie will use, the second makes the files. Movies with no path are skipped. If a path is wrong, it says so at the end.
+
+Add `--out` to choose where the files go, like `--out "C:\Users\you\Desktop\trivia-media"`. Otherwise they go to an `assets/media` folder next to the `tools` folder.
+
 ## Check the matches first
 
 Open Terminal or PowerShell in the `tools` folder and run (use `python3` on a Mac):
