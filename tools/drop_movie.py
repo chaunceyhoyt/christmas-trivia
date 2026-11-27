@@ -101,7 +101,45 @@ def movie_folder(row, root):
     return os.path.join(root, re.sub(r'[<>:"/\\|?*]', "", row["movie"]).strip().rstrip("."))
 
 
-def do_movie(path, rows, row=None, root=None):
+SKIP_DIRS = {"extras", "featurettes", "behind the scenes", "deleted scenes", "trailers", "samples", "sample",
+             "interviews", "shorts", "other", "bonus", "special features", "subs", "subtitles"}
+SKIP_WORDS = re.compile(r"\b(sample|trailer|featurette|deleted scene|behind the scenes|extras?)\b", re.I)
+
+
+def videos_in(folder):
+    """Video files directly in a folder, biggest first, leaving out samples and trailers."""
+    out = []
+    try:
+        names = os.listdir(folder)
+    except OSError:
+        return out
+    for fn in names:
+        full = os.path.join(folder, fn)
+        if os.path.isfile(full) and os.path.splitext(fn)[1].lower() in VIDEO_EXT and not fn.startswith("._") \
+                and not SKIP_WORDS.search(os.path.splitext(fn)[0]):
+            out.append(full)
+    return sorted(out, key=lambda f: -os.path.getsize(f))
+
+
+def movies_in_folder(folder):
+    """A dropped folder: a movie folder gives its main video (the biggest file). A folder of movie folders
+    gives one video per movie folder. Returns [(video, name the movie by)]."""
+    vids = videos_in(folder)
+    if vids:
+        return [(vids[0], os.path.basename(os.path.normpath(folder)))]
+    found = []
+    for root, dirs, _ in os.walk(folder):
+        dirs[:] = sorted(d for d in dirs if d.lower() not in SKIP_DIRS and not d.startswith("."))
+        if root == folder:
+            continue
+        v = videos_in(root)
+        if v:
+            found.append((v[0], os.path.basename(root)))
+            dirs[:] = []  # don't go into this movie's own subfolders (extras and so on)
+    return found
+
+
+def do_movie(path, rows, row=None, root=None, name=None):
     path = path.strip().strip('"').strip("'")
     if not os.path.isfile(path):
         print(f"\nCan't find {path}")
@@ -109,7 +147,9 @@ def do_movie(path, rows, row=None, root=None):
     if os.path.splitext(path)[1].lower() not in VIDEO_EXT:
         print(f"\nSkipping {os.path.basename(path)}: not a video file")
         return
-    row = row or which_movie(path, rows)
+    # When a folder was dropped, its name ("Alien (1979)") is a better guide than the file name ("movie.mkv").
+    named = os.path.join(os.path.dirname(path), name + os.path.splitext(path)[1]) if name else path
+    row = row or which_movie(named, rows)
     folder = movie_folder(row, root or OUT_ROOT)
     try:
         os.makedirs(folder, exist_ok=True)
@@ -201,7 +241,7 @@ def tidy(folder):
 
 
 def ask_for_paths():
-    print("Drag one or more movie files into this window, then press Enter.")
+    print("Drag one or more movie files or movie folders into this window, then press Enter.")
     print("(Or type the full path. Press Enter on an empty line to quit.)")
     text = input("> ").strip()
     if not text:
@@ -233,9 +273,21 @@ def main():
     paths = args.movies or ask_for_paths()
     if not paths:
         return
+    jobs = []
     for p in paths:
+        p = p.strip().strip('"').strip("'")
+        if os.path.isdir(p):
+            found = movies_in_folder(p)
+            if not found:
+                print(f"\nNo video file in {p}")
+            jobs += found
+        else:
+            jobs.append((p, None))
+    if len(jobs) > 1:
+        print(f"{len(jobs)} movies to do.")
+    for p, name in jobs:
         try:
-            do_movie(p, rows)
+            do_movie(p, rows, name=name)
         except Exception as e:
             print(f"\nSomething went wrong with {p}: {e}")
     print(f"\nDone. The files are in {OUT_ROOT}, one folder per movie. Delete any you don't like.")
