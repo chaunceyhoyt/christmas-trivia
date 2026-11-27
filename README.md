@@ -51,6 +51,29 @@ If the TV laptop reloads, the game picks up where it left off. **New game** at t
 - The Final Reel and Yippee-Ki-Yay are double points. Rudolph and Wet Bandits take points for wrong answers, the Grinch steals from the leader, Turbo Time gives the fastest right answer +200, Snow Day pays 25 just for answering. Kid rounds never take points away.
 - Use **−100 / +100** next to any player on the host controller for dares, ties or arguments.
 
+## Themes, Play now and game controllers
+
+**Themes.** The lobby (and the host phone) has a theme switch: **🎬 Movie Night**, all kinds of movies, and **🎄 Christmas**. The theme changes the questions, the party games, the surprise rounds, the kid rounds, the avatars, the GIF searches and the whole look. Movie Night questions are in `assets/questions-movies.js`. Christmas questions are in `assets/questions.js`. A new theme is a new questions file, one entry in `THEMES` in `assets/net.js`, and a few lines of CSS under `body.theme-<name>`.
+
+**Play now.** Press **▶ Play now** in the lobby (or on the host phone) and the game builds a whole night by itself: a mix of trivia rounds, a picture/sound/clip round if you have the files, a speed round, party games when 3 or more people are playing, surprise rounds, and the final round. Then the finale ceremony. No host needed. In kid mode it picks kid rounds and a drawing game.
+
+**Choose rounds on the TV.** **Choose rounds** in the lobby, **Choose a round** at intermission, the **Rounds** button at the bottom, or the **R** key opens a list of every round. Pick one to play it now.
+
+**Game controller.** Plug in or pair any standard controller (Xbox, PlayStation, Switch Pro, 8BitDo…) with the computer running the big screen and press a button once so the browser notices it.
+
+| Button | Does |
+| --- | --- |
+| D-pad or left stick | Move the highlight between buttons on the TV |
+| A (✕ on PlayStation) | Press the highlighted button (or "next" if nothing is highlighted) |
+| B (○) | Close the round list or scores |
+| Y (△) | Open the round list |
+| Start / Options | Pause or resume |
+| View / Share | Show or hide scores |
+| LB / RB | Back / next |
+| X (□) | Replay the sound or clip |
+
+The arrow keys and Enter do the same in the lobby, at intermission and in the round list.
+
 ## Party games and the finale
 
 - **Draw the Halls:** everyone picks one of three Christmas movies on their phone and draws it. The TV replays each drawing and everyone guesses. Artists get 100 for each correct guess. Ends with Grandma’s Fridge.

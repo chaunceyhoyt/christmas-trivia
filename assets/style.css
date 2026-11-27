@@ -734,3 +734,85 @@ h1, h2 { text-wrap: balance; }
 .fib-opt .fibber .orn { --o: 1.3em; }
 .fib-opt.wrong { opacity: .75; filter: none; }
 .p-q u { text-decoration: none; border-bottom: 3px solid var(--cran); color: transparent; }
+
+/* ---------- Big-screen controls: lobby options, round picker, controller highlight ---------- */
+.lobby-opts { display: flex; flex-wrap: wrap; gap: 1vw; margin-top: 1.4vh; }
+.tvseg { margin: 0; }
+.tvseg button { font-size: clamp(.8rem, 1.1vw, 1.25rem); padding: .4em 1em; }
+.tvseg button.on { background: var(--gold); color: var(--ink); }
+.lobby-side > p.lobby-hint, .lobby-hint { font-weight: 700; opacity: .85; margin: 1.2vh 0 0; font-size: clamp(.8rem, 1.05vw, 1.15rem); max-width: 46ch; }
+.menu-actions { display: flex; flex-wrap: wrap; gap: .8vw; margin-top: 2vh; }
+.menu-actions .btn { font-size: clamp(.85rem, 1.15vw, 1.3rem); }
+.picker .modal-card { width: min(1250px, 96vw); text-align: left; padding: 1.6vw 2vw; }
+.pick-head { display: flex; align-items: center; justify-content: space-between; gap: 1vw; }
+.pick-head h2 { margin: 0; }
+.picker .label { color: var(--cran); margin: 1.6vh 0 .6vh; }
+.pick-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(15rem, 40vw), 1fr)); gap: .7vw; }
+.pick-card { display: grid; gap: .2em; text-align: left; border: 0; border-radius: 12px; padding: .7em .9em; background: var(--cream2); color: var(--ink); box-shadow: 0 3px 0 rgba(0, 0, 0, .18); }
+.pick-card b { font-family: var(--display); font-weight: 400; font-size: clamp(.95rem, 1.25vw, 1.4rem); line-height: 1.05; }
+.pick-card span { font-weight: 800; font-size: clamp(.7rem, .85vw, .95rem); color: var(--ink2); }
+.pick-card.played { opacity: .6; }
+.pick-card.queued { box-shadow: inset 0 0 0 3px var(--pine); }
+.pick-card:disabled { opacity: .35; cursor: default; }
+.pick-foot { display: flex; gap: 1vw; flex-wrap: wrap; margin-top: 2vh; }
+/* The controller / arrow-key highlight */
+.pad-focus { outline: 5px solid var(--gold) !important; outline-offset: 4px; box-shadow: 0 0 0 9px rgba(255, 209, 102, .35), 0 0 30px rgba(255, 209, 102, .6) !important; transform: scale(1.04); z-index: 5; position: relative; }
+.foot .pad-focus { transform: none; }
+
+/* Movie Night intermission: a cinema screen between red curtains */
+.cinema { position: relative; display: grid; grid-template-columns: 1fr 6fr 1fr; aspect-ratio: 16 / 8.5; border-radius: 10px; overflow: hidden;
+  background: #120a12; box-shadow: 0 14px 30px rgba(0, 0, 0, .5), inset 0 0 0 6px #6b4a1c; }
+.cinema .curtain { background: repeating-linear-gradient(90deg, #7a0c1c 0 14px, #b3172c 14px 26px, #8e1020 26px 38px); box-shadow: inset 0 -30px 40px rgba(0, 0, 0, .45); }
+.cinema .curtain.l { border-radius: 0 0 60% 0 / 0 0 18% 0; } .cinema .curtain.r { border-radius: 0 0 0 60% / 0 0 0 18%; }
+.cinema .screen-glow { margin: 8% 4% 12%; border-radius: 6px; display: grid; place-content: center; text-align: center; gap: 1vh;
+  background: radial-gradient(ellipse at 50% 40%, #fffbe8, #e9dcb4 70%); color: var(--ink); box-shadow: 0 0 60px rgba(255, 240, 200, .45); animation: flick 3s ease-in-out infinite alternate; }
+.cinema .screen-glow b { font-family: var(--display); font-weight: 400; font-size: clamp(1.8rem, 4vw, 4.6rem); color: var(--cran); line-height: 1; }
+.cinema .screen-glow .label { color: var(--ink2); }
+.cinema .reel { font-size: clamp(1.4rem, 2.6vw, 3rem); }
+
+/* ---------- Movie Night theme: a cozy old movie palace ----------
+   Deep plum-and-navy carpet, red velvet curtains instead of plaid, marquee bulbs instead of tree lights,
+   a lit marquee sign instead of the cross-stitch sampler, and a film strip instead of the garland. */
+body.theme-movies {
+  --wall: #22163a; --wall2: #170f29;
+  --cran: #c8102e; --cran2: #7d0a1d; --pine: #1f4e8c; --pine2: #15335c;
+  --gold: #f2c14e; --gold2: #b8862a; --mauve: #8f7bd6;
+  --fancy: "Shrikhand", "Cooper Black", Georgia, serif;
+  background-color: var(--wall);
+  background-image:
+    radial-gradient(ellipse 70% 55% at 50% 30%, rgba(255, 200, 120, .14), transparent 70%),
+    radial-gradient(ellipse 120% 90% at 50% 50%, transparent 55%, rgba(6, 2, 14, .55)),
+    radial-gradient(circle at 50% 50%, rgba(242, 193, 78, .16) 0 3px, transparent 3.6px),
+    linear-gradient(45deg, rgba(143, 123, 214, .07) 25%, transparent 25% 75%, rgba(143, 123, 214, .07) 75%),
+    linear-gradient(-45deg, rgba(143, 123, 214, .07) 25%, transparent 25% 75%, rgba(143, 123, 214, .07) 75%);
+  background-size: 100% 100%, 100% 100%, 48px 48px, 48px 48px, 48px 48px;
+}
+body.theme-movies .plaid {
+  background-color: var(--theme);
+  background-image: repeating-linear-gradient(90deg, rgba(0, 0, 0, .28) 0 10px, rgba(255, 255, 255, .06) 10px 18px, rgba(0, 0, 0, .12) 18px 30px),
+    linear-gradient(rgba(255, 255, 255, .08), rgba(0, 0, 0, .25));
+}
+body.theme-movies .sampler, body.theme-movies .brand {
+  background: #15101e; border: 6px solid var(--gold2); border-radius: 10px; color: #fff;
+  box-shadow: 0 0 0 2px #5b3f10, inset 0 0 0 3px rgba(242, 193, 78, .35), 0 0 22px rgba(242, 193, 78, .35), 0 5px 0 rgba(0, 0, 0, .3);
+}
+body.theme-movies .sampler .n1, body.theme-movies .brand .n1 { color: var(--gold); font-family: var(--display); font-weight: 400; letter-spacing: .04em; }
+body.theme-movies .sampler .n2, body.theme-movies .brand .n2 { color: #fff; text-shadow: 0 0 10px rgba(255, 255, 255, .45); }
+body.theme-movies .sampler::after, body.theme-movies .brand::after { content: "★ ★ ★"; color: var(--gold); }
+body.theme-movies .lights { border-top-color: #3a2a12; }
+body.theme-movies .lights i { --c: #ffe7a3 !important; width: 1.1vw; min-width: 10px; height: 1.1vw; min-height: 10px; border-radius: 50%; margin-top: 6px; }
+body.theme-movies .lights i:nth-child(odd) { margin-top: 6px; }
+body.theme-movies .lights i::before { display: none; }
+body.theme-movies .lights i:nth-child(3n) { animation-delay: -.8s !important; }
+body.theme-movies .garland {
+  height: 20px; filter: drop-shadow(0 3px 2px rgba(0, 0, 0, .5));
+  background-image: linear-gradient(90deg, #f4ecd8 0 8px, transparent 8px 22px), linear-gradient(90deg, #f4ecd8 0 8px, transparent 8px 22px);
+  background-size: 22px 4px, 22px 4px; background-position: 4px 3px, 4px 13px; background-repeat: repeat-x; background-color: #121016;
+}
+body.theme-movies .orn .cap { display: none; }
+body.theme-movies .orn { height: var(--o); }
+body.theme-movies .orn .ball { border-style: dashed; border-color: var(--gold); }
+body.theme-movies .doily { outline-style: solid; outline-width: 3px; outline-color: var(--gold); }
+body.theme-movies .doily::after { border-color: rgba(200, 16, 46, .35); }
+body.theme-movies .code, body.theme-movies .join-tag .code { color: var(--cran); }
+.menu-right { display: grid; align-content: start; gap: 2vh; min-height: 0; }

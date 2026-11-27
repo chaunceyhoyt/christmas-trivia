@@ -19,7 +19,7 @@
       rid: null, order: [], qi: 0, phase: "lobby", choices: [], correct: -1, ans: {}, res: null, scored: {},
       tEnd: 0, tLimit: 20, qOpenAt: 0, readMs: 0, stepAt: 0, epoch: 0, golden: -1, silly: "",
       showScores: false, roundStart: {}, alarmAt: 0, queue: [], auto: true, surprise: false, kid: false,
-      paused: false, pausedAt: 0, lastKind: "", hold: false, breakSec: 20, drawings: {}, drawSeq: 0, stats: {}, finale: null, gif: null, fib: null };
+      paused: false, pausedAt: 0, lastKind: "", hold: false, theme: "movies", playNow: false, breakSec: 20, drawings: {}, drawSeq: 0, stats: {}, finale: null, gif: null, fib: null };
   }
   let G = null, photos = {};
   try { G = JSON.parse(localStorage.getItem(KEY) || "null"); } catch (e) {}
@@ -30,6 +30,12 @@
   const savePhotos = () => { try { localStorage.setItem(PKEY, JSON.stringify(photos)); } catch (e) {} };
   save();
   const cur = () => (G.rid ? byId[G.rid] : null);
+  /* Themes: rounds and prompts without a theme belong to Christmas. */
+  if (!THEMES[G.theme]) G.theme = "movies";
+  const T = () => themeOf(G.theme);
+  const inTheme = x => (x.theme || "xmas") === G.theme;
+  const TR = () => R.filter(inTheme);
+  const promptsFor = list => list.filter(x => inTheme(x) && (!G.kid || x.kid));
   const qIndex = () => G.order[G.qi];
   const curQ = () => {
     const r = cur(); if (!r) return null;
@@ -128,7 +134,7 @@
     /* A removed player can come back, but only by tapping "Join again" on their phone. */
     if (G.kicked.includes(pid)) { if (!p.again) return; G.kicked = G.kicked.filter(x => x !== pid); }
     /* A photo avatar arrives separately ("photo" event); the join only says whether the player wants one. */
-    const av = typeof p.av === "string" && p.av.length <= 12 ? p.av : "🎄", wantsPhoto = !!p.ph;
+    const av = typeof p.av === "string" && p.av.length <= 12 ? p.av : T().defaultAv, wantsPhoto = !!p.ph;
     const cur = G.players[pid];
     if (!cur) {
       if (Object.keys(G.players).length >= 60) return;
@@ -225,6 +231,8 @@
       case "auto": G.auto = !!m.on; if (G.auto && G.stepAt && G.stepAt < Date.now() + 2500) G.stepAt = Date.now() + 3000; break;
       case "surpriseOn": G.surprise = !!m.on; break;
       case "kid": G.kid = !!m.on; break;
+      case "theme": setTheme(m.id); break;
+      case "playNow": playNow(); break;
       case "scores": G.showScores = !G.showScores; break;
       case "adj": if (G.players[m.pid]) G.players[m.pid].score += Math.max(-500, Math.min(500, m.d | 0)); break;
       case "kick": kick(m.pid); break;
@@ -248,7 +256,7 @@
     Object.values(G.ans).forEach(a => counts[a.c]++);
     const m = q && q[4] ? q[4] : {};
     const s = {
-      phase: G.phase, code: G.code, epoch: G.epoch, showScores: G.showScores, paused: G.paused, kid: G.kid, auto: G.auto,
+      phase: G.phase, code: G.code, epoch: G.epoch, showScores: G.showScores, paused: G.paused, kid: G.kid, auto: G.auto, theme: G.theme, playNow: G.playNow,
       round: r ? { id: r.id, title: r.title, sub: r.sub || "", kind: r.kind, rule: r.rule || "", lead: r.lead || "", big: !!r.big,
         dark: !!r.dark, squirrel: !!r.squirrel, c1: r.c1 || "", c2: r.c2 || "", ink: r.ink || "", fx: r.fx || "", alarm: r.alarm || "",
         tagline: r.tagline || "", emoji: r.emoji || "", n: G.order.length, timer: timerFor(r), mult: r.mult || 1 } : null,
@@ -281,9 +289,9 @@
     main.send("state", s);
     host.send("hoststate", Object.assign({}, s, {
       secret: q ? { answer: G.correct >= 0 ? G.choices[G.correct] : q[1], correct: G.correct, note: q[3] || "", q: q[0], choices: G.choices, ans: G.ans } : null,
-      rounds: R.map(x => ({ id: x.id, title: x.title, kind: x.kind, n: x.kind === "draw" || x.kind === "fib" ? 1 : x.kind === "gif" ? (GIFKEY ? 1 : 0) : howMany(x) ? Math.min(howMany(x), playable(x).length) : playable(x).length, total: x.qs.length, played: G.played.includes(x.id),
+      rounds: TR().map(x => ({ id: x.id, title: x.title, kind: x.kind, n: x.kind === "draw" || x.kind === "fib" ? 1 : x.kind === "gif" ? (GIFKEY ? 1 : 0) : howMany(x) ? Math.min(howMany(x), playable(x).length) : playable(x).length, total: x.qs.length, played: G.played.includes(x.id),
         c1: x.c1 || "", timer: timerFor(x), extra: !!x.extra })),
-      queue: G.queue.slice(), surprise: G.surprise, muted: SFX.muted, music: SFX.musicOn,
+      queue: G.queue.slice(), surprise: G.surprise, themes: THEME_ORDER.map(k => ({ id: k, name: THEMES[k].name, emoji: THEMES[k].emoji })), muted: SFX.muted, music: SFX.musicOn,
       hasMusic: SFX.has("music_lobby") || SFX.has("music_think")
     }));
   }
@@ -301,8 +309,8 @@
     shuffle(opts);
     return { choices: opts, correct: opts.indexOf(String(q[1])) };
   }
-  const defaultPool = () => R.filter(r => (G.kid ? r.kind === "kid" : r.kind === "feature" || r.kind === "media") && !r.extra && !G.played.includes(r.id) && playable(r).length);
-  const surprisePool = () => R.filter(r => (G.kid ? r.kind === "kid" : r.kind === "alarm") && !G.played.includes(r.id) && !G.queue.includes(r.id));
+  const defaultPool = () => TR().filter(r => (G.kid ? r.kind === "kid" : r.kind === "feature" || r.kind === "media") && !r.extra && !G.played.includes(r.id) && playable(r).length);
+  const surprisePool = () => TR().filter(r => (G.kid ? r.kind === "kid" : r.kind === "alarm") && !G.played.includes(r.id) && !G.queue.includes(r.id));
 
   const drawSecs = r => (G.kid ? Math.max(120, r.drawSec || 90) : r.drawSec || 90);
   function pick(id) {
@@ -340,10 +348,10 @@
     const ps = active().length ? active() : Object.keys(G.players);
     if (!ps.length) return;
     stopMedia();
-    let pool = shuffle(DRAW_PROMPTS.filter(x => !G.kid || x.kid).map(x => x.t));
+    let pool = shuffle(promptsFor(DRAW_PROMPTS).map(x => x.t));
     const drawings = {};
     ps.forEach(pid => {
-      if (pool.length < 3) pool = shuffle(DRAW_PROMPTS.map(x => x.t));
+      if (pool.length < 3) pool = shuffle(DRAW_PROMPTS.filter(inTheme).map(x => x.t));
       drawings[pid] = { opts: pool.splice(0, 3), pick: -1, strokes: null };
     });
     G.rid = r.id; G.order = []; G.qi = 0; G.golden = -1; G.ans = {}; G.res = null; G.tEnd = 0; G.showScores = false; G.hold = false;
@@ -359,7 +367,7 @@
   function startGif(r) {
     if (!GIFKEY) return;
     stopMedia();
-    const prompts = shuffle(GIF_PROMPTS.filter(x => !G.kid || x.kid).map(x => x.t)).slice(0, r.prompts || 4);
+    const prompts = shuffle(promptsFor(GIF_PROMPTS).map(x => x.t)).slice(0, r.prompts || 4);
     G.rid = r.id; G.order = []; G.qi = 0; G.golden = -1; G.ans = {}; G.res = null; G.tEnd = 0; G.showScores = false; G.hold = false;
     G.gif = { seq: (G.gif ? G.gif.seq : 0) + 1, prompts, pi: -1, subs: {}, votes: {}, order: [], res: null };
     G.queue = G.queue.filter(x => x !== r.id);
@@ -397,7 +405,7 @@
   const fibSecs = (r, k) => (G.kid ? Math.max(k === "writeSec" ? 90 : 35, r[k]) : r[k]);
   function startFib(r) {
     stopMedia();
-    const prompts = shuffle(FIB_PROMPTS.filter(x => !G.kid || x.kid)).slice(0, r.prompts || 4);
+    const prompts = shuffle(promptsFor(FIB_PROMPTS)).slice(0, r.prompts || 4);
     G.rid = r.id; G.order = []; G.qi = 0; G.golden = -1; G.ans = {}; G.res = null; G.tEnd = 0; G.showScores = false; G.hold = false;
     G.fib = { seq: (G.fib ? G.fib.seq : 0) + 1, prompts, pi: -1, subs: {}, oops: {}, opts: [], votes: {}, res: null };
     G.queue = G.queue.filter(x => x !== r.id);
@@ -460,13 +468,15 @@
   }
   function surpriseNow(id) {
     let r = id && byId[id];
-    if (!r) { let pool = surprisePool(); if (!pool.length) pool = R.filter(x => x.kind === (G.kid ? "kid" : "alarm")); r = pool[Math.floor(Math.random() * pool.length)]; }
+    if (!r) { let pool = surprisePool(); if (!pool.length) pool = TR().filter(x => x.kind === (G.kid ? "kid" : "alarm")); r = pool[Math.floor(Math.random() * pool.length)]; }
     if (r) pick(r.id);
   }
   function startFromQueue() {
+    /* Play Now ends with the finale ceremony once its playlist is used up. */
+    if (!G.queue.length && G.playNow) { G.playNow = false; return startFinale(); }
     const pool = surprisePool();
     if (G.surprise && pool.length && G.lastKind !== "alarm" && Math.random() < 0.3) return pick(pool[Math.floor(Math.random() * pool.length)].id);
-    while (G.queue.length) { const id = G.queue[0]; if (byId[id] && (byId[id].kind === "draw" || byId[id].kind === "fib" || (byId[id].kind === "gif" && GIFKEY) || playable(byId[id]).length)) return pick(id); G.queue.shift(); }
+    while (G.queue.length) { const id = G.queue[0]; if (byId[id] && ((byId[id].kind === "draw" && Object.keys(G.players).length) || byId[id].kind === "fib" || (byId[id].kind === "gif" && GIFKEY) || playable(byId[id]).length)) return pick(id); G.queue.shift(); }
     const f = defaultPool()[0]; if (f) pick(f.id);
   }
   function openReady() {
@@ -604,18 +614,34 @@
   function makeAwards() {
     const ids = Object.keys(G.players), S = id => st(id), nm = n => n === 1 ? "" : "s";
     const avg = id => (S(id).a ? S(id).t / S(id).a / 1000 : 99);
+    /* Award names and jokes for each theme. The stat that wins each one is the same in every theme. */
+    const A = {
+      xmas: { quick: ["🧝", "The Quickest Elf", "Buddy would be proud."], streak: ["❄️", "Snowball Fight Champion", "That snowball got huge."],
+        round: ["💡", "The Clark Griswold", "Lit up the whole neighborhood."], gold: ["🌟", "Golden Ornament Collector", ""],
+        laugh: ["🤣", "The Jester of Whoville", "The Whos are still laughing."], fib: ["🤥", "The Bad Santa", "Shameless."],
+        art: ["🎨", "The Picasso Elf", "Straight to the fridge."], oops: ["🚐", "The Cousin Eddie", "Merry Christmas, Clark!"],
+        blank: ["🏠", "The Kevin McCallister", "Left them home alone."], lost: ["💚", "The Grinch", "Heart still two sizes too small."],
+        last: ["🩼", "The Tiny Tim", "Dead last, but God bless us, every one!"] },
+      movies: { quick: ["⚡", "The Speed Demon", "Faster than the Millennium Falcon."], streak: ["🔥", "The Franchise", "Sequel after sequel after sequel."],
+        round: ["💰", "The Box Office Smash", "Biggest opening of the night."], gold: ["🎟️", "Golden Ticket Holder", ""],
+        laugh: ["🤣", "The Comic Relief", "Stole every scene."], fib: ["🎭", "Best Actor in a Lie", "And the Oscar goes to…"],
+        art: ["🎨", "The Storyboard Artist", "A future Pixar legend."], oops: ["💥", "The Blooper Reel", "Roll the outtakes!"],
+        blank: ["📵", "The Phone Checker", "Were you texting during the movie?"], lost: ["🦹", "The Villain", "Every story needs one."],
+        last: ["🐢", "The Underdog", "Dead last, but everybody loves an underdog story."] }
+    }[T().id] || {};
+    const aw = (k, pick, line) => ({ e: A[k][0], title: A[k][1], pick, line: id => (line(id) + " " + A[k][2]).trim() });
     const defs = [
-      { e: "🧝", title: "The Quickest Elf", pick: () => ids.filter(id => S(id).a >= 3).sort((a, b) => avg(a) - avg(b))[0], line: id => `Answered in ${avg(id).toFixed(1)} seconds on average. Buddy would be proud.` },
-      { e: "❄️", title: "Snowball Fight Champion", pick: () => ids.filter(id => S(id).best >= 3).sort((a, b) => S(b).best - S(a).best)[0], line: id => `${S(id).best} right answers in a row. That snowball got huge.` },
-      { e: "💡", title: "The Clark Griswold", pick: () => ids.filter(id => S(id).round > 0).sort((a, b) => S(b).round - S(a).round)[0], line: id => `+${S(id).round} points in one round. Lit up the whole neighborhood.` },
-      { e: "🌟", title: "Golden Ornament Collector", pick: () => ids.filter(id => S(id).gold > 0).sort((a, b) => S(b).gold - S(a).gold)[0], line: id => `Nailed ${S(id).gold} golden ornament question${nm(S(id).gold)}.` },
-      { e: "🤣", title: "The Jester of Whoville", pick: () => ids.filter(id => S(id).laughs > 0).sort((a, b) => S(b).laughs - S(a).laughs)[0], line: id => `${S(id).laughs} vote${nm(S(id).laughs)} for the funniest GIF. The Whos are still laughing.` },
-      { e: "🤥", title: "The Bad Santa", pick: () => ids.filter(id => S(id).fibs > 0).sort((a, b) => S(b).fibs - S(a).fibs)[0], line: id => `Fooled ${S(id).fibs} ${S(id).fibs === 1 ? "person" : "people"} with made-up answers. Shameless.` },
-      { e: "🎨", title: "The Picasso Elf", pick: () => ids.filter(id => S(id).fans > 0).sort((a, b) => S(b).fans - S(a).fans)[0], line: id => `${S(id).fans} correct guess${S(id).fans === 1 ? "" : "es"} on their drawing. Straight to the fridge.` },
-      { e: "🚐", title: "The Cousin Eddie", pick: () => ids.filter(id => S(id).wr >= 3).sort((a, b) => S(b).wr - S(a).wr)[0], line: id => `${S(id).wr} wrong answers, and still having the best time. Merry Christmas, Clark!` },
-      { e: "🏠", title: "The Kevin McCallister", pick: () => ids.filter(id => S(id).bl >= 2).sort((a, b) => S(b).bl - S(a).bl)[0], line: id => `Left ${S(id).bl} questions home alone.` },
-      { e: "💚", title: "The Grinch", pick: () => ids.filter(id => S(id).lost >= 100).sort((a, b) => S(b).lost - S(a).lost)[0], line: id => `Lost ${S(id).lost} points to penalties and thieves. Heart still two sizes too small.` },
-      { e: "🩼", title: "The Tiny Tim", pick: () => (ids.length >= 4 ? sorted()[ids.length - 1].id : null), line: () => `Dead last, but God bless us, every one!` }
+      aw("quick", () => ids.filter(id => S(id).a >= 3).sort((a, b) => avg(a) - avg(b))[0], id => `Answered in ${avg(id).toFixed(1)} seconds on average.`),
+      aw("streak", () => ids.filter(id => S(id).best >= 3).sort((a, b) => S(b).best - S(a).best)[0], id => `${S(id).best} right answers in a row.`),
+      aw("round", () => ids.filter(id => S(id).round > 0).sort((a, b) => S(b).round - S(a).round)[0], id => `+${S(id).round} points in one round.`),
+      aw("gold", () => ids.filter(id => S(id).gold > 0).sort((a, b) => S(b).gold - S(a).gold)[0], id => `Nailed ${S(id).gold} ${T().gold.toLowerCase()} question${nm(S(id).gold)}.`),
+      aw("laugh", () => ids.filter(id => S(id).laughs > 0).sort((a, b) => S(b).laughs - S(a).laughs)[0], id => `${S(id).laughs} vote${nm(S(id).laughs)} for the funniest GIF.`),
+      aw("fib", () => ids.filter(id => S(id).fibs > 0).sort((a, b) => S(b).fibs - S(a).fibs)[0], id => `Fooled ${S(id).fibs} ${S(id).fibs === 1 ? "person" : "people"} with made-up answers.`),
+      aw("art", () => ids.filter(id => S(id).fans > 0).sort((a, b) => S(b).fans - S(a).fans)[0], id => `${S(id).fans} correct guess${S(id).fans === 1 ? "" : "es"} on their drawing.`),
+      aw("oops", () => ids.filter(id => S(id).wr >= 3).sort((a, b) => S(b).wr - S(a).wr)[0], id => `${S(id).wr} wrong answers, and still having the best time.`),
+      aw("blank", () => ids.filter(id => S(id).bl >= 2).sort((a, b) => S(b).bl - S(a).bl)[0], id => `Left ${S(id).bl} questions unanswered.`),
+      aw("lost", () => ids.filter(id => S(id).lost >= 100).sort((a, b) => S(b).lost - S(a).lost)[0], id => `Lost ${S(id).lost} points to penalties and thieves.`),
+      aw("last", () => (ids.length >= 4 ? sorted()[ids.length - 1].id : null), () => "")
     ];
     const used = new Set(), out = [];
     for (const d of defs) {
@@ -643,11 +669,42 @@
   }
   function finaleNext() { if (G.finale.k === "end") return toMenu(); G.finale.i++; finaleStep(); }
 
+  /* Switch themes. Rounds from the other theme come off the playlist. */
+  function setTheme(id) {
+    if (!THEMES[id] || id === G.theme) return;
+    G.theme = id; G.queue = G.queue.filter(x => byId[x] && inTheme(byId[x])); G.playNow = false;
+    if (G.rid && !inTheme(cur())) toMenu();
+  }
+  /* Play Now: no host needed. Builds a playlist for the theme, turns on the autopilot, and ends with the finale. */
+  function buildPlaylist() {
+    const ok = r => !G.played.includes(r.id) && playable(r).length;
+    const n = Object.keys(G.players).length;
+    if (G.kid) {
+      const kids = shuffle(TR().filter(r => r.kind === "kid" && ok(r))).slice(0, 4);
+      const draw = n >= 2 ? TR().find(r => r.kind === "draw") : null;
+      return [kids[0], kids[1], draw, kids[2], kids[3]].filter(Boolean).map(r => r.id);
+    }
+    const feats = TR().filter(r => r.kind === "feature" && !r.extra && !r.mult && !r.speed && ok(r));
+    const finale = TR().find(r => r.kind === "feature" && r.mult && !r.extra && ok(r));
+    const speed = TR().find(r => r.kind === "feature" && r.speed && ok(r));
+    const media = shuffle(TR().filter(r => r.kind === "media" && ok(r) && playable(r).length >= 5));
+    const party = shuffle(TR().filter(r => (r.kind === "fib" || r.kind === "draw" || (r.kind === "gif" && GIFKEY)) && !G.played.includes(r.id)));
+    const picked = shuffle(feats).slice(0, 4);
+    const list = [picked[0], media[0] || picked[4], picked[1], n >= 3 ? party[0] : null, picked[2], speed, picked[3], n >= 3 ? party[1] : null, finale];
+    return list.filter(Boolean).map(r => r.id).filter((id, i, a) => a.indexOf(id) === i);
+  }
+  function playNow() {
+    G.queue = buildPlaylist();
+    if (!G.queue.length) { G.played = []; G.queue = buildPlaylist(); }
+    G.playNow = true; G.auto = true; G.hold = false; if (!G.kid) G.surprise = true;
+    toMenu(); G.stepAt = Date.now() + Math.max(15, Math.min(G.breakSec, 30)) * 1000;
+  }
+
   function toMenu() { stopMedia(); G.phase = "menu"; G.rid = null; G.showScores = false; G.tEnd = 0; G.stepAt = 0; arm(); }
   /* In the menu, the autopilot starts the next round on its own when something is queued. */
   function arm(reset) {
     if (G.phase !== "menu") return;
-    if (G.auto && G.queue.length && !G.hold) { if (!G.stepAt || reset) G.stepAt = Date.now() + G.breakSec * 1000; }
+    if (G.auto && (G.queue.length || G.playNow) && !G.hold) { if (!G.stepAt || reset) G.stepAt = Date.now() + G.breakSec * 1000; }
     else G.stepAt = 0;
   }
   function setPaused(on) {
@@ -768,14 +825,15 @@
     const r = cur(), on = r && (r.kind === "alarm" || r.kind === "kid") && r.c1;
     document.documentElement.style.setProperty("--theme", on ? (r.c1 === "#ffd166" ? "#c98c06" : r.c1) : "var(--cran)");
     document.body.classList.toggle("kid", !!G.kid);
+    applyTheme(G.theme, "Big Screen");
     $("#tv").classList.toggle("paused", !!G.paused);
   }
   function mast() {
     const r = cur(), inQ = r && QPHASES.includes(G.phase);
     const mid = r ? `<div class="mast-round"><span class="label">${r.kind === "alarm" ? "SURPRISE ROUND" : r.kind === "kid" ? "KID ROUND" : "NOW PLAYING"}</span><b>${esc(r.title)}</b>
         ${inQ ? `<span class="qn">Question ${G.qi + 1} of ${G.order.length}</span>${toughMeter(toughOf(r, qIndex()), r.mult)}` : ""}</div>`
-      : `<div class="mast-round"><span class="label">${G.kid ? "KID MODE" : "TONIGHT ONLY"}</span><b>${G.phase === "lobby" ? "Doors open!" : G.phase === "finale" ? "The Grand Finale" : "Intermission"}</b></div>`;
-    return `<div class="sampler"><span class="n1">Rewind</span><span class="n2">Christmas Trivia</span></div>${mid}
+      : `<div class="mast-round"><span class="label">${G.kid ? "KID MODE" : T().name.toUpperCase()}</span><b>${G.phase === "lobby" ? "Doors open!" : G.phase === "finale" ? "The Grand Finale" : "Intermission"}</b></div>`;
+    return `<div class="sampler"><span class="n1">Rewind</span><span class="n2">${esc(T().brand)}</span></div>${mid}
       ${G.phase !== "lobby" ? `<div class="join-tag">${qr(joinUrl()) ? `<img src="${qr(joinUrl())}" alt="QR code to join">` : ""}<div class="lines"><span>JOIN AT</span><b>${esc(shortJoin())}</b><span>CODE</span><span class="code">${G.code}</span></div></div>` : ""}`;
   }
   function race(title, withDelta) {
@@ -784,11 +842,11 @@
     const lanes = ps.map((p, i) => {
       const from = withDelta ? G.roundStart[p.id] ?? 0 : p.score, d = p.score - from;
       return `<li class="lane${i === 0 && p.score > 0 ? " top" : ""}"><span class="rk">${i + 1}</span>
-        <span class="track"><span class="sled" style="--from:${pos(from).toFixed(1)};--to:${pos(p.score).toFixed(1)}">${ornament(pl(p.id))}<span class="sleigh">🛷</span></span></span>
-        <span class="nm">${esc(p.name)}${p.streak >= 3 ? ` <i class="hot">❄️${p.streak}</i>` : ""}</span>
+        <span class="track"><span class="sled" style="--from:${pos(from).toFixed(1)};--to:${pos(p.score).toFixed(1)}">${ornament(pl(p.id))}<span class="sleigh">${T().racer}</span></span></span>
+        <span class="nm">${esc(p.name)}${p.streak >= 3 ? ` <i class="hot">${T().streakIcon}${p.streak}</i>` : ""}</span>
         ${withDelta ? `<span class="delta${d < 0 ? " neg" : ""}">${d > 0 ? "+" : ""}${d}</span>` : ""}<span class="sc">${p.score}</span></li>`;
     }).join("");
-    return `<div class="race doily"><h2>${esc(title)}</h2><ol>${lanes || `<li class="empty">Nobody here yet. Scan the code to join!</li>`}</ol><div class="finish">🏁 NORTH POLE</div></div>`;
+    return `<div class="race doily"><h2>${esc(title)}</h2><ol>${lanes || `<li class="empty">Nobody here yet. Scan the code to join!</li>`}</ol><div class="finish">${esc(T().finish)}</div></div>`;
   }
   function vLobby() {
     const ps = sorted(), img = qr(joinUrl());
@@ -796,15 +854,19 @@
       <div class="frame"><div class="mat"><p class="script">Scan to join!</p>${img ? `<img src="${img}" alt="QR code to join the game">` : ""}
         <p class="small">${esc(shortJoin())}</p><p class="code-line">CODE <span class="code">${G.code}</span></p></div></div>
       <div class="lobby-side">
-        <h1>Pull up a chair, the cocoa’s hot!</h1>
-        <p>Scan the code, pick a name and a Christmas face. Every phone is one player.</p>
+        <h1>${esc(T().lobbyH)}</h1>
+        <p>Scan the code, pick a name and ${esc(T().faceShort)}. Every phone is one player.</p>
         <ul class="hanging">${ps.map(p => `<li>${ornament(pl(p.id))}<span>${esc(p.name)}</span></li>`).join("")}</ul>
-        <p class="count">${ps.length ? `${ps.length} on the nice list` : "Nobody yet. Be the first!"}</p>
-        <div class="lobby-actions"><button class="btn red" data-k="next">Start the show ▶</button><button class="btn" data-k="hostqr">Host controller</button></div>
+        <p class="count">${ps.length ? T().count(ps.length) : "Nobody yet. Be the first!"}</p>
+        <div class="lobby-actions"><button class="btn red" data-k="playnow">▶ Play now</button><button class="btn" data-k="picker">Choose rounds</button><button class="btn" data-k="hostqr">Host controller</button></div>
+        <div class="lobby-opts"><span class="seg tvseg">${THEME_ORDER.map(k => `<button data-k="theme:${k}" class="${G.theme === k ? "on" : ""}">${THEMES[k].emoji} ${esc(THEMES[k].name)}</button>`).join("")}</span>
+          <span class="seg tvseg"><button data-k="kid" class="${G.kid ? "on" : ""}">🧸 Kid mode ${G.kid ? "on" : "off"}</button></span></div>
+        <p class="lobby-hint">${pads ? "🎮 Controller ready: move with the D-pad, press A to choose." : "Play now runs a whole game by itself, no host needed. Or pick rounds yourself, or use the host phone."}</p>
       </div></section>`;
   }
   /* A cozy brick fireplace. Drop assets/media/fireplace.mp4 in to show your own crackling-fire video instead. */
   function fireplace() {
+    if (T().id === "movies") return `<div class="cinema"><div class="curtain l"></div><div class="screen-glow"><span class="label">NOW SHOWING</span><b>Intermission</b><span class="reel">🎞️ 🍿 🥤</span></div><div class="curtain r"></div></div>`;
     return `<div class="hearth"><div class="mantel"><span class="clock-orn">🕰️</span><span class="candle">🕯️</span><span class="candle">🕯️</span></div>
       <div class="stockings">${["🧦", "🧦", "🧦", "🧦", "🧦"].map((x, i) => `<span style="animation-delay:-${i * 0.7}s">${x}</span>`).join("")}</div>
       <div class="firebox">${fireOk ? `<video src="assets/media/fireplace.mp4" autoplay muted loop playsinline></video>`
@@ -812,8 +874,8 @@
   }
   function vFinale() {
     const f = G.finale, k = f.k || "intro", ps = sorted();
-    if (k === "intro") return `<section class="intro finale"><div class="rain">${emojiRain("✨🏆🎄⭐", 22)}</div><p class="label">THE GRAND FINALE</p>
-      <h1>And the awards go to…</h1><p class="script sub">Everybody grab a cookie and settle in.</p><div class="drum">🥁</div></section>`;
+    if (k === "intro") return `<section class="intro finale"><div class="rain">${emojiRain(T().finaleRain, 22)}</div><p class="label">THE GRAND FINALE</p>
+      <h1>And the awards go to…</h1><p class="script sub">${esc(T().finaleSub)}</p><div class="drum">🥁</div></section>`;
     if (k.startsWith("award")) {
       const a = f.awards[+k.slice(5)], p = G.players[a.pid];
       return `<section class="intro finale award" style="--n:${k}"><p class="label">AWARD ${+k.slice(5) + 1} OF ${f.awards.length}</p>
@@ -827,8 +889,8 @@
       return `<div class="step s${place}${on ? " on" : ""}">${on ? `<div class="who">${place === 1 ? '<span class="crown">👑</span>' : ""}${ornament(pl(p.id), "big")}<b>${esc(p.name)}</b><span>${p.score.toLocaleString()} pts</span></div>` : `<div class="who mystery">?</div>`}
         <div class="block ${cls}">${place}</div></div>`;
     };
-    return `<section class="podium-wrap${k === "end" ? " end" : ""}">${k === "p1" || k === "end" ? `<div class="rain">${emojiRain("🎉✨❄️🎄⭐🎁", 34)}</div>` : ""}
-      <h1>${k === "end" ? "Merry Christmas, ya filthy animals!" : k === "p1" ? "Our trivia champion!" : "The winners’ mantel"}</h1>
+    return `<section class="podium-wrap${k === "end" ? " end" : ""}">${k === "p1" || k === "end" ? `<div class="rain">${emojiRain(T().winRain, 34)}</div>` : ""}
+      <h1>${k === "end" ? esc(T().finaleEnd) : k === "p1" ? "Our trivia champion!" : "The winners’ mantel"}</h1>
       <div class="podium">${spot(2, "silver")}${spot(1, "gold")}${spot(3, "bronze")}</div>
       ${k === "end" ? race("Final standings", false) : ""}</section>`;
   }
@@ -838,7 +900,7 @@
     return `<section class="gif-pick"><p class="label">GIF WRAPPED · PROMPT ${g.pi + 1} OF ${g.prompts.length}</p>
       <div class="prompt doily">${esc(g.prompts[g.pi])}</div>
       <div class="gif-row"><div class="clock"><span class="cap"></span><b id="timer">${Math.max(0, Math.ceil((G.tEnd - now) / 1000))}</b><small>seconds</small></div>
-        <p class="script sub">Find the perfect Christmas GIF on your phone.<br>Add a caption if you’re feeling funny.</p></div>${giphyTag}</section>`;
+        <p class="script sub">Find the perfect ${esc(T().gifWord)} GIF on your phone.<br>Add a caption if you’re feeling funny.</p></div>${giphyTag}</section>`;
   }
   function vGifBoard() {
     const g = G.gif, res = G.phase === "gifresult" ? g.res : null, n = g.order.length, now = G.paused ? G.pausedAt : Date.now();
@@ -870,7 +932,7 @@
     const tiles = f.opts.map((o, i) => {
       const who = voters(i);
       let tag = "";
-      if (res) tag = o.real ? `<span class="truth">✓ THE TRUTH</span>` : o.house ? `<span class="fibber">👵 Grandma’s fib</span>`
+      if (res) tag = o.real ? `<span class="truth">✓ THE TRUTH</span>` : o.house ? `<span class="fibber">${T().houseIcon} ${esc(T().house)}</span>`
         : `<span class="fibber">${o.authors.map(a => `${ornament(pl(a), "tiny")} ${esc(G.players[a] ? G.players[a].name : "")}${who.length ? ` <b>+${who.length * (cur().fooled || 150)}</b>` : ""}`).join(" · ")}</span>`;
       return `<li class="ch ch-${i % 4} fib-opt${res ? (o.real ? " right" : " wrong") : ""}" style="animation-delay:${res && !o.real ? 0 : i * 80}ms">
         <span class="letter">${i + 1}</span><span class="ctext">${esc(o.t)}</span>
@@ -882,14 +944,15 @@
   }
   function vMenu() {
     const q = G.queue.map(id => byId[id]).filter(Boolean);
-    const status = G.hold ? "Taking a break. The host will start the next round." : !q.length ? "The host is picking the next round…" : !G.auto ? "Waiting for the host to start it." : "";
+    const status = G.hold ? "Taking a break. The host will start the next round." : !q.length ? (G.playNow ? "Last round done. The finale is next!" : "Pick the next round, or let Play now take over.") : !G.auto ? "Waiting for the host to start it." : "";
     return `<section class="menu">
       <div class="cozy">${fireplace()}
         <div class="marquee doily"><p class="label">${G.hold ? "INTERMISSION" : "COMING UP NEXT"}</p>
           ${q.length ? `<ol class="upnext">${q.slice(0, 3).map((r, i) => `<li${i === 0 ? ' class="first"' : ""}><b>${esc(r.title)}</b><span>${esc(r.sub || "")}</span></li>`).join("")}</ol>` : ""}
           ${status ? `<p class="waiting">${status}</p>` : ""}
           ${G.surprise && !G.hold ? `<p class="hint">Careful: a surprise round could sneak in at any time.</p>` : ""}</div></div>
-      ${race("The Sleigh Race", false)}</section>`;
+      <div class="menu-right">${race(T().race, false)}
+        <div class="menu-actions">${q.length && !G.auto ? `<button class="btn red" data-k="next">Start it ▶</button>` : ""}<button class="btn" data-k="picker">Choose a round</button>${!q.length ? `<button class="btn red" data-k="playnow">▶ Play now</button>` : ""}<button class="btn gold" data-k="finale">🏆 Finale</button></div></div></section>`;
   }
   function vDrawPick() {
     const r = cur();
@@ -913,7 +976,7 @@
   }
   function vFridge() {
     const items = G.order.filter(pid => G.drawings[pid] && G.players[pid]);
-    return `<section class="fridge-wrap"><div class="fridge-head"><p class="label">THAT’S A WRAP ON DRAW THE HALLS</p><h1>Grandma’s Fridge</h1></div>
+    return `<section class="fridge-wrap"><div class="fridge-head"><p class="label">${esc(T().fridgeLabel)}</p><h1>${esc(T().fridge)}</h1></div>
       <div class="fridge">${items.map((pid, i) => { const d = G.drawings[pid]; return `<figure class="art" style="--tilt:${((i * 37) % 9) - 4}deg">
         <span class="magnet m${i % 4}"></span><img src="${artUrl(pid)}" alt=""><figcaption><b>${esc(d.opts[d.pick])}</b>by ${esc(G.players[pid].name)}</figcaption></figure>`; }).join("")}</div></section>`;
   }
@@ -929,19 +992,19 @@
   }
   function vSilly() {
     const r = cur();
-    return `<section class="silly"><div class="rain">${emojiRain(r.emoji || "🤪🎄⛄", 24)}</div>
-      <h1 class="jiggle">JINGLE JIGGLE!</h1><p class="script">Everybody, right now…</p><p class="dare doily">${esc(G.silly)}</p></section>`;
+    return `<section class="silly"><div class="rain">${emojiRain(r.emoji || T().sillyEmoji, 24)}</div>
+      <h1 class="jiggle">${esc(T().silly)}</h1><p class="script">Everybody, right now…</p><p class="dare doily">${esc(G.silly)}</p></section>`;
   }
   function mediaBlock(q) {
     const m = q[4]; if (!m) return "";
-    if (m.tune) return `<div class="musicbox"><span class="box">🎶</span><span class="notes"><i>♪</i><i>♫</i><i>♪</i><i>♬</i></span><span class="mb-label">Grandma’s music box is playing…</span></div>`;
+    if (m.tune) return `<div class="musicbox"><span class="box">🎶</span><span class="notes"><i>♪</i><i>♫</i><i>♪</i><i>♬</i></span><span class="mb-label">${esc(T().musicbox)}</span></div>`;
     if (m.audio) return `<div class="musicbox"><span class="box">📻</span><span class="notes"><i>♪</i><i>♫</i><i>♪</i><i>♬</i></span><span class="mb-label">Listen closely…</span></div>`;
     return `<div class="media-slot" id="mslot"></div>`;
   }
   function vReady() {
     const r = cur(), q = curQ(), dark = r.dark, m = q[4];
     return `<section class="ready${m ? " has-media" : ""}">
-      ${G.qi === G.golden ? `<div class="golden-banner">🌟 GOLDEN ORNAMENT! This one’s worth double! 🌟</div>` : ""}
+      ${G.qi === G.golden ? `<div class="golden-banner">${T().goldIcon} ${esc(T().gold.toUpperCase())}! This one’s worth double! ${T().goldIcon}</div>` : ""}
       ${r.lead && !dark ? `<p class="lead script">${esc(r.lead)}</p>` : ""}
       ${dark ? `<h2 class="qtext dark">Lights out! Look at your phones…</h2>` : m ? "" : `<h2 class="qtext${r.big ? " emoji" : ""}">${esc(q[0])}</h2>`}
       ${mediaBlock(q)}
@@ -950,7 +1013,7 @@
   function dropOrn(pid, k, gain) {
     const x = G.res && G.res[pid], p = G.players[pid];
     return `<span class="drop" style="animation-delay:${Math.min(k * 70, 1400)}ms">${ornament(pl(pid))}
-      ${gain && x ? `<b class="gain">+${x.d}</b>` : ""}${gain && p && p.streak >= 3 ? `<i class="hot">❄️${p.streak}</i>` : ""}${x && x.golden ? `<i class="gold">🌟</i>` : ""}</span>`;
+      ${gain && x ? `<b class="gain">+${x.d}</b>` : ""}${gain && p && p.streak >= 3 ? `<i class="hot">${T().streakIcon}${p.streak}</i>` : ""}${x && x.golden ? `<i class="gold">${T().goldIcon}</i>` : ""}</span>`;
   }
   function vQuestion() {
     const r = cur(), q = curQ(), ph = G.phase, landed = ph === "locked" || ph === "reveal", rev = ph === "reveal", dark = r.dark && !rev;
@@ -982,7 +1045,7 @@
       </div>
       <aside class="listing-side">${side}
         <div class="stat"><b id="nAns">${Object.keys(G.ans).length}</b><span>of ${Object.keys(G.players).length} answered</span></div>
-        ${G.qi === G.golden ? `<div class="golden-tag">🌟<span>Golden ornament<br>double points</span></div>` : ""}
+        ${G.qi === G.golden ? `<div class="golden-tag">${T().goldIcon}<span>${esc(T().gold)}<br>double points</span></div>` : ""}
       </aside></section>`;
   }
   function names(ids) { return ids.map(id => G.players[id] && esc(G.players[id].name)).filter(Boolean).join(", "); }
@@ -990,13 +1053,13 @@
     const res = G.res || {};
     const ok = Object.keys(res).filter(id => res[id].ok), bad = Object.keys(res).filter(id => !res[id].ok && res[id].c >= 0);
     const fastest = ok.slice().sort((a, b) => G.ans[a].t - G.ans[b].t)[0];
-    let out = `<p class="who">${ok.length ? `Quickest elf: <b>${names([fastest])}</b> (+${res[fastest].d})` : "Nobody got this one! Bah, humbug."}</p>`;
+    let out = `<p class="who">${ok.length ? `${esc(T().quickest)}: <b>${names([fastest])}</b> (+${res[fastest].d})` : esc(T().nobody)}</p>`;
     const first = Object.keys(res).find(id => res[id].first);
     if (first) out += `<p class="who">Turbo bonus: <b>${names([first])}</b> +${res[first].first}</p>`;
     const robbed = Object.keys(res).find(id => res[id].robbed);
     if (robbed) out += `<p class="who miss">The Grinch stole <b>${res[robbed].robbed}</b> from <b>${names([robbed])}</b></p>`;
     const hot = ok.filter(id => res[id].streak >= 3);
-    if (hot.length) out += `<p class="who">❄️ Snowball streak: <b>${hot.map(id => `${esc(G.players[id].name)} ×${res[id].streak}`).join(", ")}</b></p>`;
+    if (hot.length) out += `<p class="who">${T().streakIcon} ${esc(T().streak)}: <b>${hot.map(id => `${esc(G.players[id].name)} ×${res[id].streak}`).join(", ")}</b></p>`;
     if (r.squirrel && bad.length) out += `<p class="who miss">Yell SQUIRREL: <b>${names(bad)}</b></p>`;
     else if (r.wrong && bad.length) out += `<p class="who miss">Lose ${r.wrong}: <b>${names(bad)}</b></p>`;
     return out;
@@ -1005,7 +1068,7 @@
     const r = cur();
     if (r.kind === "draw") return vFridge();
     return `<section class="roundend"><div class="wrap"><p class="label">THAT’S A WRAP ON</p><h1>${esc(r.title)}</h1>
-      <p class="script">${G.queue.length ? "Next up: " + esc(byId[G.queue[0]] ? byId[G.queue[0]].title : "") : "Stretch your legs, refill the eggnog!"}</p></div>${race("The Sleigh Race", true)}</section>`;
+      <p class="script">${G.queue.length ? "Next up: " + esc(byId[G.queue[0]] ? byId[G.queue[0]].title : "") : esc(T().breakLine)}</p></div>${race(T().race, true)}</section>`;
   }
   function vAlarm() {
     const r = cur(), revealed = !G.alarmAt || Date.now() - G.alarmAt > 2200;
@@ -1018,11 +1081,27 @@
            <div class="alarm-cards"><p><b>House rule</b>${esc(r.rule)}</p></div>`}
       </div></div>`;
   }
+  /* The round picker: lets the TV (with a controller, mouse or keyboard) pick rounds without the host phone. */
+  function vPicker() {
+    const groups = G.kid ? [["Kid rounds 🧸", r => r.kind === "kid"], ["Party games", r => ["draw", "gif", "fib"].includes(r.kind)]]
+      : [["Rounds", r => r.kind === "feature" && !r.extra], ["Pictures, sounds & video", r => r.kind === "media"], ["Party games", r => ["draw", "gif", "fib"].includes(r.kind)], ["Surprise rounds 🚨", r => r.kind === "alarm"]];
+    const count = r => ["draw", "fib"].includes(r.kind) ? "Party" : r.kind === "gif" ? (GIFKEY ? "Party" : "Needs GIPHY key") : `${howMany(r) ? Math.min(howMany(r), playable(r).length) : playable(r).length} Q`;
+    const can = r => ["draw", "fib"].includes(r.kind) || (r.kind === "gif" ? !!GIFKEY : playable(r).length > 0);
+    const body = groups.map(([label, f]) => {
+      const rs = TR().filter(f); if (!rs.length) return "";
+      return `<p class="label">${esc(label)}</p><div class="pick-grid">${rs.map(r => `<button class="pick-card${G.played.includes(r.id) ? " played" : ""}${G.queue.includes(r.id) ? " queued" : ""}" data-k="${can(r) ? "play:" + r.id : "none"}"${can(r) ? "" : " disabled"}>
+        <b>${esc(r.title)}</b><span>${esc(count(r))}${G.played.includes(r.id) ? " · played" : ""}${G.queue.includes(r.id) ? " · in playlist" : ""}</span></button>`).join("")}</div>`;
+    }).join("");
+    return `<div class="modal picker"><div class="modal-card doily"><div class="pick-head"><h2>Choose a round</h2><button class="btn" data-k="closepicker">Close</button></div>
+      <p class="small">${pads ? "D-pad to move, A to play it now, B to close." : "Click a round to play it now."} ${esc(T().emoji)} ${esc(T().name)}${G.kid ? " · Kid mode" : ""}</p>${body}
+      <div class="pick-foot"><button class="btn red" data-k="playnow">▶ Play now (whole game)</button><button class="btn gold" data-k="finale">🏆 Finale ceremony</button></div></div></div>`;
+  }
   function overlay() {
     let html = "";
+    if (showPicker) html += vPicker();
     if (G.phase === "alarm" && cur()) html += vAlarm();
-    if (G.showScores) html += `<div class="modal"><div class="modal-card">${race("The Sleigh Race", false)}</div></div>`;
-    if (G.paused) html += `<div class="pause-card doily"><b>Paused</b><span>Go grab a cookie. We’ll wait.</span></div>`;
+    if (G.showScores) html += `<div class="modal"><div class="modal-card">${race(T().race, false)}</div></div>`;
+    if (G.paused) html += `<div class="pause-card doily"><b>Paused</b><span>${esc(T().pause)}</span></div>`;
     if (showHostQr) html += `<div class="modal" data-k="closeqr"><div class="modal-card doily"><h2>Host controller</h2>
       <p>Scan this with <b>your</b> phone. Keep it away from the guests: it has the host PIN.</p>
       ${qr(hostUrl()) ? `<img src="${qr(hostUrl())}" alt="QR code for the host controller">` : ""}
@@ -1046,7 +1125,7 @@
     const ps = sorted().filter(p => p.id !== artistNow());
     return ps.map(p => `<span class="t-item${G.ans[p.id] ? " in" : ""}">${ornament(pl(p.id))}<span>${esc(p.name)}</span></span>`).join("");
   }
-  let showHostQr = false, resetArmed = false, resetT = 0, soundOn = false;
+  let showHostQr = false, showPicker = false, resetArmed = false, resetT = 0, soundOn = false, pads = 0;
   const last = {};
   function put(sel, html) { if (last[sel] === html) return false; last[sel] = html; $(sel).innerHTML = html; return true; }
   function renderTray() {
@@ -1070,9 +1149,11 @@
       <span><span class="dot${hostOn ? " on" : ""}"></span>${hostOn ? "Host phone connected" : "No host phone"}</span>
       ${G.kid ? "<span>🧸 Kid mode</span>" : ""}
       ${location.protocol === "file:" ? `<span class="warn">Opened from a file: phones can’t join until this is on the web</span>` : ""}
-      <span class="right"><span>Space next · ← back · P pause · S scores · A surprise</span>
+      <span class="right"><span>${pads ? "🎮 A choose · B close · Start pause · View scores · Y rounds · LB/RB back/next" : "Space next · ← back · P pause · S scores · R rounds · A surprise"}</span>
+      <button data-k="picker">Rounds</button>
       <button data-k="hostqr">Host QR</button><button data-k="mute">${SFX.muted ? "Sound off" : "Sound on"}</button>
       <button data-k="reset">${resetArmed ? "Click again: new game" : "New game"}</button></span>`);
+    markPad();
   }
   function render() {
     theme();
@@ -1084,6 +1165,7 @@
     renderTray();
     put("#overlay", overlay());
     renderFoot(); renderChip();
+    markPad();
   }
 
   /* ---------- local controls ---------- */
@@ -1096,29 +1178,118 @@
       case "pause": setPaused(!G.paused); break;
       case "hostqr": showHostQr = !showHostQr; break;
       case "closeqr": showHostQr = false; break;
+      case "picker": showPicker = !showPicker; showHostQr = false; break;
+      case "closepicker": showPicker = false; break;
+      case "playnow": showPicker = false; playNow(); break;
+      case "finale": showPicker = false; startFinale(); break;
+      case "kid": G.kid = !G.kid; G.queue = []; G.playNow = false; break;
+      case "replay": replayMedia(); break;
+      case "close": if (showPicker || showHostQr) { showPicker = false; showHostQr = false; } else if (G.showScores) G.showScores = false; else return; break;
       case "mute": SFX.setMuted(!SFX.muted); break;
       case "reset":
         if (!resetArmed) { resetArmed = true; clearTimeout(resetT); resetT = setTimeout(() => { resetArmed = false; renderFoot(); }, 4000); renderFoot(); return; }
         resetArmed = false; stopMedia(); G = fresh(); photos = {}; savePhotos(); save(); connect(); break;
-      default: return;
+      default:
+        if (k.startsWith("theme:")) { setTheme(k.slice(6)); break; }
+        if (k.startsWith("play:")) { showPicker = false; G.hold = false; pick(k.slice(5)); break; }
+        return;
     }
     arm(); save(); render(); publish();
   }
   function unlockSound() { if (!soundOn) { soundOn = SFX.unlock(); $("#soundBanner").hidden = true; } }
   document.addEventListener("click", e => {
-    unlockSound();
+    unlockSound(); padShow = false;
     const b = e.target.closest("[data-k]");
     if (b) act(b.dataset.k);
   });
   document.addEventListener("keydown", e => {
     if (e.ctrlKey || e.metaKey || e.altKey) return;
     unlockSound();
-    const map = { " ": "next", Enter: "next", ArrowRight: "next", PageDown: "next", ArrowLeft: "prev", PageUp: "prev", a: "alarm", A: "alarm", s: "scores", S: "scores", p: "pause", P: "pause", h: "hostqr", H: "hostqr", m: "mute", M: "mute", Escape: "closeqr" };
+    const map = { " ": "next", Enter: "next", ArrowRight: "next", PageDown: "next", ArrowLeft: "prev", PageUp: "prev", a: "alarm", A: "alarm", s: "scores", S: "scores", p: "pause", P: "pause", h: "hostqr", H: "hostqr", m: "mute", M: "mute", r: "picker", R: "picker", Escape: "close" };
+    const navNow = showPicker || showHostQr || ["lobby", "menu"].includes(G.phase);
+    const arrows = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] };
+    if (navNow && arrows[e.key]) { e.preventDefault(); padMove(...arrows[e.key]); return; }
+    if (navNow && e.key === "Enter" && padShow) { e.preventDefault(); padPress(); return; }
     const k = map[e.key];
     if (!k) return;
     if (document.activeElement && document.activeElement.matches("button") && (e.key === " " || e.key === "Enter")) return;
     e.preventDefault(); act(k);
   });
+
+
+  /* ---------- Game controller and arrow-key navigation ----------
+     Works with any standard gamepad the browser sees (Xbox, PlayStation, Switch Pro, 8BitDo…).
+     D-pad or left stick moves a highlight between the big screen's buttons; A presses it. */
+  let padKey = "", padIx = 0, padShow = false;
+  const padPrev = {}, padNext = {};
+  const navTargets = () => {
+    const modal = document.querySelector("#overlay .modal:not(.alarm-wrap)");
+    const scope = modal || document;
+    return [...scope.querySelectorAll("[data-k]")].filter(el => !el.disabled && el.dataset.k !== "none" && !el.classList.contains("modal") && el.getClientRects().length);
+  };
+  const padEl = () => { const same = navTargets().filter(el => el.dataset.k === padKey); return same[padIx] || same[0]; };
+  function markPad() {
+    document.querySelectorAll(".pad-focus").forEach(el => el.classList.remove("pad-focus"));
+    if (!padShow) return;
+    const el = padEl(); if (el) { el.classList.add("pad-focus"); el.scrollIntoView({ block: "nearest", inline: "nearest" }); }
+  }
+  const setPad = el => { const same = navTargets().filter(x => x.dataset.k === el.dataset.k); padKey = el.dataset.k; padIx = Math.max(0, same.indexOf(el)); };
+  function padMove(dx, dy) {
+    const els = navTargets(); if (!els.length) return;
+    const was = padShow; padShow = true;
+    const at = padEl();
+    if (!at || !was) { setPad(at || els.find(e => e.matches(".pick-card:not(.played)")) || els.find(e => e.matches(".btn.red")) || els[0]); return markPad(); }
+    const a = at.getBoundingClientRect(), ax = a.left + a.width / 2, ay = a.top + a.height / 2;
+    let best = null, bestScore = Infinity;
+    for (const el of els) {
+      if (el === at) continue;
+      const b = el.getBoundingClientRect(), ddx = b.left + b.width / 2 - ax, ddy = b.top + b.height / 2 - ay;
+      const along = dx ? ddx * dx : ddy * dy; if (along <= 4) continue;
+      const score = along + (dx ? Math.abs(ddy) : Math.abs(ddx)) * 2.5;
+      if (score < bestScore) { bestScore = score; best = el; }
+    }
+    if (best) setPad(best);
+    markPad();
+  }
+  function padPress() { const el = padShow && padEl(); if (el) act(el.dataset.k); else act("next"); }
+  const PADS = { 0: "a", 1: "b", 2: "x", 3: "y", 4: "lb", 5: "rb", 8: "view", 9: "start", 12: "up", 13: "down", 14: "left", 15: "right" };
+  function padFire(k) {
+    unlockSound();
+    switch (k) {
+      case "up": return padMove(0, -1);
+      case "down": return padMove(0, 1);
+      case "left": return padMove(-1, 0);
+      case "right": return padMove(1, 0);
+      case "a": return padPress();
+      case "b": return act("close");
+      case "x": return act("replay");
+      case "y": return act("picker");
+      case "start": return act("pause");
+      case "view": return act("scores");
+      case "lb": return act("prev");
+      case "rb": return act("next");
+    }
+  }
+  function pollPads() {
+    const list = navigator.getGamepads ? [...navigator.getGamepads()].filter(g => g && g.connected) : [];
+    if (list.length !== pads) { pads = list.length; render(); }
+    if (list.length) {
+      const now = performance.now(), down = {};
+      for (const gp of list) {
+        gp.buttons.forEach((b, i) => { if (PADS[i] && (b.pressed || b.value > .5)) down[PADS[i]] = true; });
+        const x = gp.axes[0] || 0, y = gp.axes[1] || 0;
+        if (x < -.6) down.left = true; if (x > .6) down.right = true; if (y < -.6) down.up = true; if (y > .6) down.down = true;
+      }
+      for (const k of Object.values(PADS)) {
+        if (down[k] && !padPrev[k]) { padFire(k); padNext[k] = now + 420; }
+        else if (down[k] && ["up", "down", "left", "right"].includes(k) && now >= padNext[k]) { padFire(k); padNext[k] = now + 140; }
+        padPrev[k] = !!down[k];
+      }
+    }
+    requestAnimationFrame(pollPads);
+  }
+  window.addEventListener("gamepadconnected", () => { pads = -1; });
+  requestAnimationFrame(pollPads);
 
   $("#lightsTop").innerHTML = stringLights(28);
   connect();

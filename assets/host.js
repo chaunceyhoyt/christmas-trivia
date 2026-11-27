@@ -22,7 +22,7 @@
     return { lobby: "Start the show", menu: H.queue.length ? "Start the next round now" : "Play the next round", intro: "First question", alarm: "First question", silly: "Next question",
       ready: "Open answers now", fibwrite: "Close fibbing, start the vote", fibvote: "Reveal the truth", fibresult: H.fib && H.fib.pi + 1 >= H.fib.n ? "Finish the round" : "Next fact", gifpick: "Close GIF picking, start the vote", gifvote: "Close the vote", gifresult: H.gif && H.gif.pi + 1 >= H.gif.n ? "Finish the round" : "Next prompt", finale: H.finale && H.finale.k === "end" ? "Back to intermission" : "Next award", drawpick: "Start drawing now", drawing: "Done drawing, start guessing", question: "Lock answers now", locked: "Reveal the answer", reveal: last ? "Finish the round" : "Next question", roundend: "Back to intermission" }[H.phase] || "Next";
   };
-  const phaseName = p => ({ lobby: "Lobby", menu: "Intermission", intro: "Round intro", alarm: "SURPRISE!", silly: "Jingle Jiggle", ready: "Reading time", fibwrite: "Writing fibs", fibvote: "Finding the truth", fibresult: "The truth is out", gifpick: "Picking GIFs", gifvote: "Voting", gifresult: "GIF results", finale: "Finale ceremony", drawpick: "Picking movies", drawing: "Drawing", question: "Answers open", locked: "Avatars landing", reveal: "Answer revealed", roundend: "Round over" }[p] || p);
+  const phaseName = p => ({ lobby: "Lobby", menu: "Intermission", intro: "Round intro", alarm: "SURPRISE!", silly: "Silly break", ready: "Reading time", fibwrite: "Writing fibs", fibvote: "Finding the truth", fibresult: "The truth is out", gifpick: "Picking GIFs", gifvote: "Voting", gifresult: "GIF results", finale: "Finale ceremony", drawpick: "Picking movies", drawing: "Drawing", question: "Answers open", locked: "Avatars landing", reveal: "Answer revealed", roundend: "Round over" }[p] || p);
   const left = ms => Math.max(0, Math.ceil((ms - (H && !H.paused ? Date.now() - gotAt : 0)) / 1000));
 
   function renderHead() {
@@ -43,7 +43,7 @@
     if (H.phase === "fibvote") return `Voting · ${left(H.tLeft)}s left · ${H.fib ? H.fib.voted.length : 0} voted`;
     if (H.phase === "gifpick") return `Picking GIFs · ${left(H.tLeft)}s left · ${H.gif ? H.gif.done.length : 0} sent`;
     if (H.phase === "gifvote") return `Voting · ${left(H.tLeft)}s left · ${H.gif ? H.gif.voted.length : 0} voted`;
-    if (H.phase === "finale") return H.finale && H.finale.k === "end" ? "🏆 That’s a wrap! Merry Christmas!" : "🏆 The finale runs by itself. Tap the red button to skip ahead.";
+    if (H.phase === "finale") return H.finale && H.finale.k === "end" ? "🏆 " + themeOf(H.theme).wrap : "🏆 The finale runs by itself. Tap the red button to skip ahead.";
     if (H.phase === "drawpick") return `Players are picking their movie · ${H.draw ? H.draw.done.length : 0} drawings in`;
     if (H.phase === "drawing") return `Drawing · ${left(H.tLeft)}s left · ${H.draw ? H.draw.done.length : 0} done`;
     if (H.phase === "menu" && H.hold) return "☕ Intermission. Tap the red button when you’re ready for the next round.";
@@ -75,7 +75,7 @@
     } else if (r && H.gif && H.phase.startsWith("gif")) {
       body = `<p class="p-item"><span>GIF Wrapped · prompt ${H.gif.pi + 1}/${H.gif.n}</span><span>${phaseName(H.phase)}</span></p><h2>${esc(H.gif.prompt)}</h2>`;
     } else if (r) {
-      body = `<p class="p-item"><span>${phaseName(H.phase)}</span><span>${r.n} questions · ${r.timer}s each</span></p><h2>${esc(r.title)}</h2>${r.rule ? `<p>${esc(r.rule)}</p>` : ""}${H.silly ? `<p><b>Jingle Jiggle:</b> ${esc(H.silly)}</p>` : ""}`;
+      body = `<p class="p-item"><span>${phaseName(H.phase)}</span><span>${r.n} questions · ${r.timer}s each</span></p><h2>${esc(r.title)}</h2>${r.rule ? `<p>${esc(r.rule)}</p>` : ""}${H.silly ? `<p><b>Silly break:</b> ${esc(H.silly)}</p>` : ""}`;
     } else {
       body = `<p class="p-item"><span>${phaseName(H.phase)}</span><span>${H.players.length} player${H.players.length === 1 ? "" : "s"}</span></p><h2>${H.phase === "lobby" ? "Waiting for guests to join" : H.queue.length ? "Next: " + esc(roundTitle(H.queue[0])) : "Pick rounds for the playlist"}</h2>`;
     }
@@ -94,7 +94,8 @@
     return `<p class="h-sec">${title}</p>${note ? `<p class="small">${note}</p>` : ""}<div class="h-rounds">${list.map(roundBtn).join("")}</div>`;
   }
   function vMain() {
-    const R = H.rounds, by = k => R.filter(x => x.kind === k);
+    applyTheme(H.theme, "Host");
+    const R = H.rounds, by = k => R.filter(x => x.kind === k), TH = themeOf(H.theme), party = by("draw").concat(by("gif"), by("fib"));
     const feats = by("feature").filter(x => !x.extra), extra = by("feature").filter(x => x.extra);
     const inQ = H.phase === "question";
     return `${vNow()}
@@ -110,18 +111,22 @@
         <button class="btn" data-c="replay"${H.media && H.media !== "img" ? "" : " disabled"}>Replay clip</button>
       </div>
       <div class="card toggles">
+        <div class="toggle"><span><b>Theme</b><small>Changes the questions, the party games and the look</small>
+          <span class="seg">${(H.themes || []).map(t => `<button data-theme="${esc(t.id)}" class="${H.theme === t.id ? "on" : ""}">${t.emoji} ${esc(t.name)}</button>`).join("")}</span></span></div>
+        <button class="btn red big-btn" data-c="playNow">▶ Play now: build a whole game and run it</button>
+        <p class="small">${H.playNow ? "Play now is running. It ends with the finale ceremony." : "Play now picks a mix of rounds for you, turns on the autopilot and ends with the finale. You can still change anything here."}</p>
         <label class="toggle"><input type="checkbox" data-t="auto"${H.auto ? " checked" : ""}><span><b>Autopilot</b><small>Moves through questions and plays the playlist by itself</small></span></label>
         <label class="toggle"><input type="checkbox" data-t="surpriseOn"${H.surprise ? " checked" : ""}><span><b>Surprise rounds</b><small>Now and then, a ${H.kid ? "kid" : "surprise"} round sneaks in between playlist rounds</small></span></label>
-        <div class="toggle"><span><b>Break between rounds</b><small>How long the fireplace shows before the next playlist round</small>
+        <div class="toggle"><span><b>Break between rounds</b><small>How long the intermission shows before the next playlist round</small>
           <span class="seg">${[[10, "10s"], [20, "20s"], [60, "1 min"], [120, "2 min"], [300, "5 min"]].map(([v, l]) => `<button data-brk="${v}" class="${H.breakSec === v ? "on" : ""}">${l}</button>`).join("")}</span></span></div>
-        <label class="toggle"><input type="checkbox" data-t="kid"${H.kid ? " checked" : ""}><span><b>Kid mode 🧸</b><small>At least 30 seconds a question, kid rounds, Jingle Jiggle breaks</small></span></label>
+        <label class="toggle"><input type="checkbox" data-t="kid"${H.kid ? " checked" : ""}><span><b>Kid mode 🧸</b><small>At least 30 seconds a question, kid rounds, silly breaks</small></span></label>
       </div>
       <p class="h-sec">PLAYLIST (${H.queue.length})</p>
       ${H.queue.length ? `<ol class="playlist">${H.queue.map((id, i) => `<li><span class="nm">${i + 1}. ${esc(roundTitle(id))}</span>${i ? `<button data-up="${i}" aria-label="Move up">↑</button>` : ""}<button class="x" data-unq="${i}" aria-label="Remove">✕</button></li>`).join("")}</ol>`
         : `<p class="small">Tap a round below to add it. ▶ plays a round right now.</p>`}
       <div class="h-row"><button class="btn" data-c="queueAll">Add all unplayed</button><button class="btn" data-c="clearQueue"${H.queue.length ? "" : " disabled"}>Clear playlist</button></div>
       ${H.kid ? section("KID ROUNDS 🧸", by("kid")) : ""}
-      ${section("PARTY GAMES 🖍️", [...by("draw"), ...by("gif"), ...by("fib")], "Draw the Halls: everyone draws a movie, then guesses. GIF Wrapped: everyone answers a prompt with a Christmas GIF, then votes. Fa-La-La Lies: everyone writes a fake answer, then hunts for the real one." + (R.some(x => x.kind === "gif" && !x.n) ? " GIF Wrapped needs a GIPHY key in assets/config.js (see the README)." : ""))}
+      ${section("PARTY GAMES 🖍️", party, party.map(x => x.title).join(", ") + ": draw a movie for everyone to guess, answer a prompt with the funniest " + TH.gifWord + " GIF, or write fake answers and hunt for the real one." + (R.some(x => x.kind === "gif" && !x.n) ? " The GIF game needs a GIPHY key in assets/config.js (see the README)." : ""))}
       ${section("ROUNDS", feats)}
       ${section("PICTURES, SOUNDS &amp; VIDEO", by("media"), "These use files you add to assets/media. Rounds without files are greyed out.")}
       ${section("SURPRISE ROUNDS 🚨", by("alarm"))}
@@ -165,6 +170,8 @@
   document.addEventListener("click", e => {
     const b = e.target.closest("[data-brk]");
     if (b) { cmd("breakSec", { s: +b.dataset.brk }); return; }
+    const th = e.target.closest("[data-theme]");
+    if (th) { cmd("theme", { id: th.dataset.theme }); return; }
     const t = e.target.closest("[data-c],[data-q],[data-now],[data-adj],[data-kick],[data-unq],[data-up]");
     if (!t || t.disabled) return;
     if (t.dataset.c) {

@@ -34,8 +34,53 @@ window.emojiRain = (emoji, count) => {
     `<span style="left:${(i * 37) % 100}%;animation-duration:${4 + (i % 5)}s;animation-delay:-${((i * 0.61) % 5).toFixed(2)}s;font-size:${2 + (i % 4)}rem">${esc(set[i % set.length])}</span>`).join("");
 };
 
-/* Christmas avatars players can pick. */
-window.AVATARS = ["🎅", "🤶", "🧝", "🦌", "⛄", "🐧", "🎄", "🎁", "🍪", "🔔", "⭐", "🧸", "🐻‍❄️", "🦊", "🍭", "🧦", "🛷", "❄️", "🕯️", "🥧", "🐿️", "🦉", "🎺", "🍩"];
+/* Themes. Every bit of wording and decoration that changes with the theme lives here, so adding a theme later
+   means adding one entry (plus its questions file and a few lines of CSS under body.theme-<id>). */
+window.THEMES = {
+  movies: {
+    id: "movies", name: "Movie Night", brand: "Movie Trivia", emoji: "🎬",
+    avatars: ["🎬", "🍿", "🎥", "🎟️", "🦖", "👽", "🤖", "🦸", "🧙", "🧛", "🤠", "🏴‍☠️", "🦈", "🦁", "🐼", "🦍", "👻", "🚀", "🧜‍♀️", "🕷️", "🥷", "🧞", "🐉", "🦄"],
+    defaultAv: "🍿", face: "Pick your movie star", faceShort: "a movie face",
+    lobbyH: "Grab your popcorn, the show’s about to start!", count: n => `${n} in the audience`,
+    race: "The Box Office Race", racer: "🎞️", finish: "🏁 OPENING WEEKEND",
+    pause: "Intermission. Go refill the popcorn.", phonePause: "The host hit pause. Grab some popcorn!",
+    breakLine: "Stretch your legs, hit the snack bar!", silly: "ACTION!", sillyEmoji: "🎬🍿🤪",
+    quickest: "Fastest draw", nobody: "Nobody got this one! Roll the blooper reel.",
+    fridgeLabel: "THAT’S A WRAP ON DOODLE THEATER", fridge: "The Gallery Wall", house: "The usher’s fib", houseIcon: "🎟️",
+    musicbox: "The organ is playing…", gifWord: "movie", gifPrefix: "movie",
+    gifChips: ["funny", "Star Wars", "Marvel", "Disney", "The Office", "shocked", "dancing", "applause", "fail"],
+    finaleRain: "✨🏆🎬⭐", winRain: "🎉✨🍿🎬⭐🏆", finaleSub: "Everybody grab some popcorn and settle in.",
+    gold: "Golden ticket", goldIcon: "🎟️", streak: "Hot streak", streakIcon: "🔥",
+    finaleEnd: "That’s a wrap, folks!", wrap: "That’s a wrap! Thanks for coming!", medal: "🎬"
+  },
+  xmas: {
+    id: "xmas", name: "Christmas", brand: "Christmas Trivia", emoji: "🎄",
+    avatars: ["🎅", "🤶", "🧝", "🦌", "⛄", "🐧", "🎄", "🎁", "🍪", "🔔", "⭐", "🧸", "🐻‍❄️", "🦊", "🍭", "🧦", "🛷", "❄️", "🕯️", "🥧", "🐿️", "🦉", "🎺", "🍩"],
+    defaultAv: "🎄", face: "Pick your Christmas face", faceShort: "a Christmas face",
+    lobbyH: "Pull up a chair, the cocoa’s hot!", count: n => `${n} on the nice list`,
+    race: "The Sleigh Race", racer: "🛷", finish: "🏁 NORTH POLE",
+    pause: "Go grab a cookie. We’ll wait.", phonePause: "The host hit pause. Grab a cookie!",
+    breakLine: "Stretch your legs, refill the eggnog!", silly: "JINGLE JIGGLE!", sillyEmoji: "🤪🎄⛄",
+    quickest: "Quickest elf", nobody: "Nobody got this one! Bah, humbug.",
+    fridgeLabel: "THAT’S A WRAP ON DRAW THE HALLS", fridge: "Grandma’s Fridge", house: "Grandma’s fib", houseIcon: "👵",
+    musicbox: "Grandma’s music box is playing…", gifWord: "Christmas", gifPrefix: "christmas",
+    gifChips: ["funny", "Elf", "Home Alone", "Grinch", "Santa", "Christmas Vacation", "shocked", "dancing", "fail"],
+    finaleRain: "✨🏆🎄⭐", winRain: "🎉✨❄️🎄⭐🎁", finaleSub: "Everybody grab a cookie and settle in.",
+    gold: "Golden ornament", goldIcon: "🌟", streak: "Snowball streak", streakIcon: "❄️",
+    finaleEnd: "Merry Christmas, ya filthy animals!", wrap: "That’s a wrap! Merry Christmas!", medal: "🎄"
+  }
+};
+window.THEME_ORDER = ["movies", "xmas"];
+window.themeOf = id => THEMES[id] || THEMES.movies;
+/* Show the page in a theme: body class (for colors) and the browser tab title. */
+window.applyTheme = (id, page) => {
+  const t = themeOf(id);
+  Object.keys(THEMES).forEach(k => document.body.classList.toggle("theme-" + k, k === t.id));
+  if (page) document.title = `${page} · Rewind ${t.brand}`;
+  return t;
+};
+/* Christmas avatars, kept for older code. Pages use themeOf(theme).avatars. */
+window.AVATARS = THEMES.xmas.avatars;
 
 /* An avatar drawn as a glass Christmas ornament. p = {id, av, photo}. */
 window.ornament = (p, cls = "") => {

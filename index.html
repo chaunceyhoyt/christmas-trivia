@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#5a1828">
-<title>Rewind Christmas Trivia</title>
+<title>Rewind Movie Trivia</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Mountains+of+Christmas:wght@700&family=Nunito:wght@400;700;800;900&family=Shrikhand&display=swap">
@@ -14,8 +14,8 @@
 <div class="lights-top" id="lt"></div>
 <main class="landing">
   <div class="hero">
-    <div class="sampler"><span class="n1">Rewind</span><span class="n2">Christmas Trivia</span></div>
-    <p>Pull up a chair. Grandma made cookies.</p>
+    <div class="sampler"><span class="n1">Rewind</span><span class="n2">Movie Trivia</span></div>
+    <p>Movie Night or Christmas: pick a theme on the big screen.</p>
   </div>
   <div class="choose">
     <a href="play.html"><div class="card"><span class="label">FOR GUESTS</span><h2>Join a game</h2><p>Type the four-letter code from the big screen. Or just scan the QR code on the TV.</p></div></a>
@@ -24,6 +24,6 @@
   </div>
 </main>
 <script src="assets/net.js"></script>
-<script>document.getElementById("lt").innerHTML = stringLights(20);</script>
+<script>applyTheme("movies"); document.getElementById("lt").innerHTML = stringLights(20);</script>
 </body>
 </html>

@@ -1,4 +1,4 @@
-/* Player phone: join with a name and a Christmas avatar (or your own face), answer questions, see results.
+/* Player phone: join with a name and an avatar (or your own face), answer questions, see results.
    The big screen does all scoring. */
 (() => {
   const $ = s => document.querySelector(s);
@@ -9,7 +9,7 @@
   let me = null;
   try { me = JSON.parse(localStorage.getItem("xmas-me") || "null"); } catch (e) {}
   if (!me || !me.pid) me = { pid: "p" + Math.random().toString(36).slice(2, 10) + Date.now().toString(36), name: "" };
-  if (!me.av) me.av = AVATARS[Math.floor(Math.random() * AVATARS.length)];
+  if (!me.av) me.av = THEMES.movies.avatars[Math.floor(Math.random() * THEMES.movies.avatars.length)];
   const saveMe = () => { try { localStorage.setItem("xmas-me", JSON.stringify(me)); } catch (e) {} };
   saveMe();
   const myOrn = (cls = "") => ornament({ id: me.pid, av: me.av, photo: me.photo || "" }, cls);
@@ -18,6 +18,9 @@
   let draftAv = me.av, draftPhoto = me.photo || "";
   const picks = {}; // epoch -> choice index
   let seenAlarm = "", seenReveal = -1, alarmSeenAt = 0;
+  /* The theme comes from the big screen. Until it answers, use the last one we saw. */
+  let lastTheme = ""; try { lastTheme = localStorage.getItem("xmas-theme") || ""; } catch (e) {}
+  const TH = () => themeOf((S && S.theme) || lastTheme);
 
   function connect() {
     if (ch) ch.close();
@@ -66,9 +69,9 @@
     const preview = ornament({ id: me.pid, av: draftAv, photo: draftPhoto }, "big");
     return `<form class="card" id="nameForm"><h1>Who are you?</h1>
       <div class="pick-preview">${preview}</div>
-      <div class="field"><label for="nameIn">Your name</label><input id="nameIn" maxlength="24" autocomplete="off" value="${esc(me.name)}" placeholder="Cousin Eddie" required></div>
-      <p class="label">Pick your Christmas face</p>
-      <div class="av-grid">${AVATARS.map(a => `<button type="button" class="av${!draftPhoto && a === draftAv ? " on" : ""}" data-av="${esc(a)}">${a}</button>`).join("")}</div>
+      <div class="field"><label for="nameIn">Your name</label><input id="nameIn" maxlength="24" autocomplete="off" value="${esc(me.name)}" placeholder="Your name" required></div>
+      <p class="label">${esc(TH().face)}</p>
+      <div class="av-grid">${TH().avatars.map(a => `<button type="button" class="av${!draftPhoto && a === draftAv ? " on" : ""}" data-av="${esc(a)}">${a}</button>`).join("")}</div>
       <label class="btn green big-btn photo-btn">📸 Use my face<input type="file" id="photoIn" accept="image/*" capture="user" hidden></label>
       ${draftPhoto ? `<button type="button" class="link" data-act="nophoto">Remove my photo</button>` : ""}
       <button class="btn red big-btn" type="submit">${me.name ? "Save" : "Join the game"}</button></form>`;
@@ -85,7 +88,7 @@
   function qCard() {
     const r = S.round;
     return `<div class="card"><p class="p-item"><span>${esc(r.title)}</span><span>${S.qi + 1} of ${r.n}</span></p>
-      <div class="p-meta">${toughMeter(S.tough, r.mult)}${S.golden ? `<span class="gold-pill">🌟 Golden · double points</span>` : ""}</div>
+      <div class="p-meta">${toughMeter(S.tough, r.mult)}${S.golden ? `<span class="gold-pill">${TH().goldIcon} ${esc(TH().gold)} · double points</span>` : ""}</div>
       ${S.media ? `<p class="hint-line">${mediaHint()}</p>` : ""}
       ${r.lead && !S.media ? `<p class="small">${esc(r.lead)}</p>` : ""}${S.media ? "" : `<p class="p-q${r.big ? " emoji" : ""}">${esc(S.q)}</p>`}</div>`;
   }
@@ -106,8 +109,8 @@
         if (res.ok) {
           lines.push(`Right answer <b>+${res.base}</b>`);
           if (res.speed) lines.push(`Speed bonus <b>+${res.speed}</b>`);
-          if (res.golden) lines.push(`🌟 Golden ornament <b>×2</b>`);
-          if (res.sb) lines.push(`❄️ Snowball streak ×${res.streak} <b>+${res.sb}</b>`);
+          if (res.golden) lines.push(`${TH().goldIcon} ${esc(TH().gold)} <b>×2</b>`);
+          if (res.sb) lines.push(`${TH().streakIcon} ${esc(TH().streak)} ×${res.streak} <b>+${res.sb}</b>`);
         } else lines.push(`The answer was <b>${esc(right)}</b>`);
         if (res.lost) lines.push(`Wrong answer <b>−${res.lost}</b>`);
         if (res.everyone) lines.push(`Snow day bonus <b>+${res.everyone}</b>`);
@@ -139,10 +142,10 @@
         : `<div class="uhoh">UH OH…</div><div class="alarm-line">${esc(r.alarm)}</div>`}</div></div>`;
   }
   function vSilly() {
-    return `<div class="card silly-card"><h1 class="jiggle">JINGLE JIGGLE!</h1><p class="script">Everybody, right now…</p><p class="dare">${esc(S.silly)}</p></div>`;
+    return `<div class="card silly-card"><h1 class="jiggle">${esc(TH().silly)}</h1><p class="script">Everybody, right now…</p><p class="dare">${esc(S.silly)}</p></div>`;
   }
   function vScores() {
-    return `<div class="card"><h2>The Sleigh Race</h2><ol class="ranklist">${S.players.map((p, i) => `<li class="${p.id === me.pid ? "me" : ""}"><span>${i + 1}.</span>${ornament({ id: p.id, av: p.ph ? "📸" : p.av, photo: p.id === me.pid ? me.photo : "" }, "tiny")}<span>${esc(p.name)}</span><span>${p.score.toLocaleString()}</span></li>`).join("")}</ol></div>`;
+    return `<div class="card"><h2>${esc(TH().race)}</h2><ol class="ranklist">${S.players.map((p, i) => `<li class="${p.id === me.pid ? "me" : ""}"><span>${i + 1}.</span>${ornament({ id: p.id, av: p.ph ? "📸" : p.av, photo: p.id === me.pid ? me.photo : "" }, "tiny")}<span>${esc(p.name)}</span><span>${p.score.toLocaleString()}</span></li>`).join("")}</ol></div>`;
   }
   function vIntro() {
     const r = S.round;
@@ -162,7 +165,9 @@
     const r = S && S.round;
     document.documentElement.style.setProperty("--theme", r && (r.kind === "alarm" || r.kind === "kid") && r.c1 && ["alarm", "intro", "silly", "ready", "question", "locked", "reveal"].includes(S.phase) ? (r.c1 === "#ffd166" ? "#c98c06" : r.c1) : "var(--cran)");
     const row = myRow();
-    put("#head", `<div class="brand"><span class="n1">Rewind</span><span class="n2">Christmas Trivia</span></div>
+    applyTheme(TH().id, "Play");
+    if (S && S.theme && S.theme !== lastTheme) { lastTheme = S.theme; try { localStorage.setItem("xmas-theme", lastTheme); } catch (e) {} }
+    put("#head", `<div class="brand"><span class="n1">Rewind</span><span class="n2">${esc(TH().brand)}</span></div>
       <div class="me">${me.name && !editing ? `${myOrn("head")}<span><b>${esc(me.name)}</b>${row ? `${row.score.toLocaleString()} pts · #${rank()}` : ""}</span>` : code ? `Game ${esc(code)}` : ""}</div>`);
     let html = "", over = "";
     if (!code) html = vCode();
@@ -174,7 +179,7 @@
     else if (!inRoster()) html = vWait("Signing you in…", "Hang on a second.");
     else {
       switch (S.phase) {
-        case "lobby": html = `<div class="card welcome">${myOrn("huge")}<h1>You’re in, ${esc(me.name)}!</h1><p>Look for your ornament on the big screen. The game starts soon.</p></div><p class="p-status">${S.players.length} on the nice list</p>`; break;
+        case "lobby": html = `<div class="card welcome">${myOrn("huge")}<h1>You’re in, ${esc(me.name)}!</h1><p>Look for your face on the big screen. The game starts soon.</p></div><p class="p-status">${S.players.length} on the nice list</p>`; break;
         case "menu": html = scoreCard() + vWait(S.hold ? "Intermission ☕" : S.next && S.next[0] ? "Up next: " + S.next[0] : "Between rounds", waits[Math.floor(gotAt / 30000) % waits.length]); break;
         case "drawpick": html = vDrawPick(); break;
         case "finale": html = vFinale(); break;
@@ -194,7 +199,7 @@
         default: html = scoreCard();
       }
       if (S.showScores && S.phase !== "roundend") html = vScores() + html;
-      if (S.paused) over = `<div class="pause-card doily"><b>Paused</b><span>The host hit pause. Grab a cookie!</span></div>`;
+      if (S.paused) over = `<div class="pause-card doily"><b>Paused</b><span>${esc(TH().phonePause)}</span></div>`;
     }
     put("#view", html);
     put("#overlay", over);
@@ -243,11 +248,11 @@
   }
   function vGifPick() {
     const g = S.gif;
-    return `<div class="card"><p class="p-item"><span>GIF Wrapped</span><span>${g.pi + 1} of ${g.n}</span></p><p class="p-q">${esc(g.prompt)}</p></div>
+    return `<div class="card"><p class="p-item"><span>${esc((S.round && S.round.title) || "GIF game")}</span><span>${g.pi + 1} of ${g.n}</span></p><p class="p-q">${esc(g.prompt)}</p></div>
       <div class="p-clock"><b id="pTimer"></b><div class="cane"><i id="pCane"></i></div></div>
       <div class="card gif-panel">
-        <div class="gif-search"><input id="gifQ" type="search" placeholder="Search Christmas GIFs…" autocomplete="off" enterkeyhint="search"><button class="btn green" data-act="gifgo">Search</button></div>
-        <div class="gif-chips">${["funny", "Elf", "Home Alone", "Grinch", "Santa", "Christmas Vacation", "shocked", "dancing", "fail"].map(t => `<button data-gq="${esc(t)}">${esc(t)}</button>`).join("")}</div>
+        <div class="gif-search"><input id="gifQ" type="search" placeholder="Search ${esc(TH().gifWord)} GIFs…" autocomplete="off" enterkeyhint="search"><button class="btn green" data-act="gifgo">Search</button></div>
+        <div class="gif-chips">${TH().gifChips.map(t => `<button data-gq="${esc(t)}">${esc(t)}</button>`).join("")}</div>
         <div class="gif-res" id="gifRes"></div>
         <p class="giphy-tag dark">Powered by GIPHY</p>
       </div>
@@ -271,9 +276,10 @@
     gif.q = term;
     const box = $("#gifRes"); if (!box) return;
     if (!GIFKEY) { box.innerHTML = `<p class="small">The host hasn’t added a GIPHY key yet.</p>`; return; }
-    box.innerHTML = `<p class="small">Looking for Christmas GIFs…</p>`; box.dataset.k = "";
+    box.innerHTML = `<p class="small">Looking for ${esc(TH().gifWord)} GIFs…</p>`; box.dataset.k = "";
     const id = ++gifReq;
-    const q = /christmas|xmas/i.test(term) ? term : "christmas " + term;
+    /* Keep every search on theme: "funny" becomes "christmas funny" or "movie funny". */
+    const pre = TH().gifPrefix, q = new RegExp(pre === "christmas" ? "christmas|xmas" : "movie|film", "i").test(term) ? term : pre + " " + term;
     /* Reuse recent results for the same search, so GIPHY's hourly limit lasts the whole party. */
     const ck = (S.gif.rating + ":" + q).toLowerCase(), hit = gifCache[ck];
     if (hit && Date.now() - hit.at < 3600000) { gif.results = hit.list; drawGifs(); return; }
@@ -295,7 +301,7 @@
     if (!force && box.dataset.k === k && box.children.length) return;
     box.dataset.k = k;
     box.innerHTML = gif.results.length ? gif.results.map((x, i) => `<button class="gif-opt${gif.sel === x ? " on" : ""}" data-gif="${i}"><img src="${esc(x.s)}" alt="" loading="lazy"></button>`).join("")
-      : `<p class="small">No Christmas GIFs for “${esc(gif.q)}”. Try another word.</p>`;
+      : `<p class="small">No ${esc(TH().gifWord)} GIFs for “${esc(gif.q)}”. Try another word.</p>`;
   }
   function showSel() {
     const box = $("#gifSel"); if (!box || !gif.sel) return;
@@ -349,7 +355,7 @@
     const names = ids => ids.map(id => (S.players.find(p => p.id === id) || {}).name).filter(Boolean).join(" & ");
     const lines = [];
     if (x.truth) lines.push("You found the truth! <b>+300</b>");
-    else if (fell) lines.push(fell.house ? "You fell for Grandma’s fib! 👵" : `You fell for ${esc(names(fell.authors))}’s fib!`);
+    else if (fell) lines.push(fell.house ? `You fell for ${esc(TH().house)}! ${TH().houseIcon}` : `You fell for ${esc(names(fell.authors))}’s fib!`);
     if (x.fooled) lines.push(`Your fib fooled ${x.fooled} ${x.fooled === 1 ? "person" : "people"}! <b>+${x.d - (x.truth ? 300 : 0)}</b>`);
     return `<div class="card result ${x.d > 0 ? "ok" : "bad"}"><div class="mark">${x.fooled ? "🤥" : x.truth ? "✓" : "✗"}</div><div class="delta">${x.d > 0 ? "+" : ""}${x.d}</div>
       <ul class="breakdown">${lines.map(l => `<li>${l}</li>`).join("")}</ul><p>The truth: <b>${esc(real ? real.t : "")}</b></p></div>`;
@@ -361,7 +367,7 @@
     const f = S.finale || {}, k = f.k || "intro", place = rank(), mine = (f.mine || []).find(a => a.pid === me.pid);
     if (k !== finaleBuzz) { finaleBuzz = k; if (f.award && f.award.pid === me.pid) buzz([100, 60, 100, 60, 300]); if (k === "p" + place) buzz([200, 100, 200, 100, 600]); }
     if (f.award && f.award.pid === me.pid) return `<div class="card welcome award-card"><div class="trophy">${f.award.e}</div><p class="label">THAT’S YOU!</p><h1>${esc(f.award.title)}</h1><p>${esc(f.award.line)}</p>${myOrn("big")}</div>`;
-    const medal = ["", "🥇", "🥈", "🥉"][place] || "🎄";
+    const medal = ["", "🥇", "🥈", "🥉"][place] || TH().medal;
     const revealed = { p3: 3, p2: 2, p1: 1, end: 1 }[k];
     if (revealed && place && place >= revealed && place <= 3) return `<div class="card welcome award-card"><div class="trophy">${medal}</div><p class="label">YOU FINISHED</p><h1>${place === 1 ? "First place! 👑" : place === 2 ? "Second place!" : "Third place!"}</h1>${myOrn("huge")}</div>`;
     if (k === "end") return `<div class="card welcome">${myOrn("big")}<p class="label">FINAL STANDINGS</p><h1>You finished #${place} of ${S.players.length}</h1>${mine ? `<p>${mine.e} You won <b>${esc(mine.title)}</b>!</p>` : ""}<p>Merry Christmas!</p></div>` + vScores();
