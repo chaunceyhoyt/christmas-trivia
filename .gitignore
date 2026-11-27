@@ -1,3 +1,4 @@
 assets/media/candidates/
 tools/*.chosen.csv
 tools/picks/
+__pycache__/
