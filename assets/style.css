@@ -816,3 +816,12 @@ body.theme-movies .doily { outline-style: solid; outline-width: 3px; outline-col
 body.theme-movies .doily::after { border-color: rgba(200, 16, 46, .35); }
 body.theme-movies .code, body.theme-movies .join-tag .code { color: var(--cran); }
 .menu-right { display: grid; align-content: start; gap: 2vh; min-height: 0; }
+
+/* Screen players: controller button hints on each answer, and the picked answer when one person plays on the TV. */
+.local-row { margin-top: .8vh; }
+.ch[data-k] { cursor: pointer; }
+.ch .padkey { position: absolute; right: .8vw; top: 50%; transform: translateY(-50%); width: clamp(1.7rem, 2.4vw, 2.8rem); height: clamp(1.7rem, 2.4vw, 2.8rem);
+  border-radius: 50%; display: grid; place-items: center; font-weight: 900; font-size: clamp(.9rem, 1.3vw, 1.5rem); color: #fff;
+  border: 3px solid rgba(255, 255, 255, .85); box-shadow: 0 3px 0 rgba(0, 0, 0, .35); }
+.padkey.pk-0 { background: #3fa535; } .padkey.pk-1 { background: #d8322f; } .padkey.pk-2 { background: #2a6fd6; } .padkey.pk-3 { background: #e7b416; color: #222; }
+.ch.mine { box-shadow: 0 0 0 5px #fff, 0 0 34px rgba(255, 255, 255, .7), 0 6px 0 rgba(0, 0, 0, .35); transform: scale(1.02); }

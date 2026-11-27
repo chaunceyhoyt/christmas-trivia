@@ -49,7 +49,12 @@
   const timerFor = r => (G.kid ? Math.max(30, r.timer || 20) : r.timer || 20);
   const sorted = () => Object.entries(G.players).map(([id, p]) => ({ id, ...p })).sort((a, b) => b.score - a.score || a.at - b.at);
   const pl = id => { const p = G.players[id]; return p ? { id, av: p.av, photo: p.ph && photos[id] ? photos[id] : "" } : { id }; };
-  const active = () => Object.keys(G.players).filter(id => Date.now() - (G.players[id].seen || 0) < 45000 && id !== artistNow());
+  /* Screen players answer on the big screen itself (controller, keyboard or mouse) instead of a phone. */
+  const isLocal = id => !!G.players[id] && G.players[id].local != null;
+  const phoneIds = () => Object.keys(G.players).filter(id => !isLocal(id));
+  const localIds = () => Object.keys(G.players).filter(isLocal).sort((a, b) => G.players[a].local - G.players[b].local);
+  const live = id => isLocal(id) || Date.now() - (G.players[id].seen || 0) < 45000;
+  const active = () => Object.keys(G.players).filter(id => live(id) && id !== artistNow());
 
   /* ---------- media availability ---------- */
   const mediaOk = {}, variants = {}, useSrc = {};
@@ -133,7 +138,7 @@
   }
   function seen(pid) { if (pid && G.players[pid]) G.players[pid].seen = Date.now(); }
   function onJoin(p) {
-    if (!p || typeof p.pid !== "string") return;
+    if (!p || typeof p.pid !== "string" || p.pid.startsWith("tv-")) return;
     const pid = p.pid.slice(0, 40), name = String(p.name || "").trim().slice(0, 24);
     if (!name) return;
     /* A removed player can come back, but only by tapping "Join again" on their phone. */
@@ -205,14 +210,33 @@
     const o = f.opts[p.i | 0]; if (!o || o.authors.includes(p.pid)) return;
     f.votes[p.pid] = p.i | 0; seen(p.pid); lastAnsAt = Date.now(); save(); renderTray(); publish();
   }
-  function onAnswer(p) {
-    if (!p || !G.players[p.pid] || G.phase !== "question" || G.paused || p.epoch !== G.epoch || p.pid === artistNow()) return;
+  function onAnswer(p, local) {
+    if (!p || !G.players[p.pid] || isLocal(p.pid) !== !!local || G.phase !== "question" || G.paused || p.epoch !== G.epoch || p.pid === artistNow()) return;
     const c = p.c | 0;
     if (c < 0 || c >= G.choices.length) return;
     const had = G.ans[p.pid];
     G.ans[p.pid] = { c, t: had && had.c === c ? had.t : Date.now() };
     seen(p.pid); lastAnsAt = Date.now();
     save(); renderTray(); publish();
+  }
+  const LOCAL_MAX = 4;
+  function addLocal() {
+    const used = localIds().map(id => G.players[id].local);
+    const j = [0, 1, 2, 3].find(x => !used.includes(x));
+    if (j == null || Object.keys(G.players).length >= 60) return;
+    const pid = "tv-" + (j + 1), av = T().avatars[(j * 5) % T().avatars.length];
+    G.kicked = G.kicked.filter(x => x !== pid);
+    G.players[pid] = { name: "Player " + (j + 1), score: 0, at: Date.now(), av, ph: "", streak: 0, seen: Date.now(), local: j };
+    SFX.play("join");
+  }
+  function dropLocal() { const ids = localIds(); if (ids.length) kick(ids[ids.length - 1]); }
+  /* Is a screen player answering right now? Then controller face buttons and keys 1-4 pick answers. */
+  const answering = () => G.phase === "question" && !G.paused && !showPicker && !showHostQr && !G.showScores && localIds().length > 0;
+  function localAnswer(slot, c) {
+    const pid = localIds().find(id => G.players[id].local === slot);
+    if (!pid || !answering()) return;
+    onAnswer({ pid, c, epoch: G.epoch }, true);
+    render();
   }
   function onCmd(m) {
     hostSeen = Date.now();
@@ -350,7 +374,7 @@
   let alarmT = 0;
   /* Draw the Halls: everybody gets three movies, picks one and draws it. Then the drawings become questions. */
   function startDraw(r) {
-    const ps = active().length ? active() : Object.keys(G.players);
+    const ps = active().filter(id => !isLocal(id)).length ? active().filter(id => !isLocal(id)) : phoneIds();
     if (!ps.length) return;
     stopMedia();
     let pool = shuffle(promptsFor(DRAW_PROMPTS).map(x => x.t));
@@ -481,7 +505,7 @@
     if (!G.queue.length && G.playNow) { G.playNow = false; return startFinale(); }
     const pool = surprisePool();
     if (G.surprise && pool.length && G.lastKind !== "alarm" && Math.random() < 0.3) return pick(pool[Math.floor(Math.random() * pool.length)].id);
-    while (G.queue.length) { const id = G.queue[0]; if (byId[id] && ((byId[id].kind === "draw" && Object.keys(G.players).length) || byId[id].kind === "fib" || (byId[id].kind === "gif" && GIFKEY) || playable(byId[id]).length)) return pick(id); G.queue.shift(); }
+    while (G.queue.length) { const id = G.queue[0]; if (byId[id] && ((byId[id].kind === "draw" && phoneIds().length) || (byId[id].kind === "fib" && phoneIds().length) || (byId[id].kind === "gif" && GIFKEY && phoneIds().length) || playable(byId[id]).length)) return pick(id); G.queue.shift(); }
     const f = defaultPool()[0]; if (f) pick(f.id);
   }
   function openReady() {
@@ -683,7 +707,7 @@
   /* Play Now: no host needed. Builds a playlist for the theme, turns on the autopilot, and ends with the finale. */
   function buildPlaylist() {
     const ok = r => !G.played.includes(r.id) && playable(r).length;
-    const n = Object.keys(G.players).length;
+    const n = phoneIds().length; // party games need phones
     if (G.kid) {
       const kids = shuffle(TR().filter(r => r.kind === "kid" && ok(r))).slice(0, 4);
       const draw = n >= 2 ? TR().find(r => r.kind === "draw") : null;
@@ -803,14 +827,14 @@
     if ((G.phase === "fibwrite" || G.phase === "fibvote") && G.tEnd) {
       const s = Math.max(0, Math.ceil((G.tEnd - now) / 1000));
       if (s !== lastSec) { lastSec = s; if (s <= 5 && s > 0) SFX.play("tick"); const el = $("#timer"); if (el) el.textContent = s; }
-      const act = Object.keys(G.players).filter(id => Date.now() - (G.players[id].seen || 0) < 45000), f = G.fib;
+      const act = phoneIds().filter(live), f = G.fib;
       const done = G.phase === "fibwrite" ? act.every(k => f.subs[k]) : act.every(k => k in f.votes);
       if (act.length && done && now - lastAnsAt > 1500) { next(); save(); render(); publish(); return; }
     }
     if ((G.phase === "gifpick" || G.phase === "gifvote") && G.tEnd) {
       const s = Math.max(0, Math.ceil((G.tEnd - now) / 1000));
       if (s !== lastSec) { lastSec = s; if (s <= 5 && s > 0) SFX.play("tick"); const el = $("#timer"); if (el) el.textContent = s; }
-      const act = Object.keys(G.players).filter(id => Date.now() - (G.players[id].seen || 0) < 45000), g = G.gif;
+      const act = phoneIds().filter(live), g = G.gif;
       const done = G.phase === "gifpick" ? act.every(k => g.subs[k]) : act.every(k => g.votes[k] || (g.order.length === 1 && g.order[0] === k));
       if (act.length && done && now - lastAnsAt > 1500) { next(); save(); render(); publish(); return; }
     }
@@ -864,11 +888,13 @@
         <ul class="hanging">${ps.map(p => `<li>${ornament(pl(p.id))}<span>${esc(p.name)}</span></li>`).join("")}</ul>
         <p class="count">${ps.length ? T().count(ps.length) : "Nobody yet. Be the first!"}</p>
         <div class="lobby-actions"><button class="btn red" data-k="playnow">▶ Play now</button><button class="btn" data-k="picker">Choose rounds</button><button class="btn" data-k="hostqr">Host controller</button></div>
+        <div class="lobby-actions local-row">${localIds().length < LOCAL_MAX ? `<button class="btn" data-k="localjoin">🎮 ${localIds().length ? "Add a screen player" : "Play on this screen"}</button>` : ""}${localIds().length ? `<button class="btn" data-k="localdrop">− Remove one</button>` : ""}</div>
         <div class="lobby-opts"><span class="seg tvseg">${THEME_ORDER.map(k => `<button data-k="theme:${k}" class="${G.theme === k ? "on" : ""}">${THEMES[k].emoji} ${esc(THEMES[k].name)}</button>`).join("")}</span>
           <span class="seg tvseg"><button data-k="kid" class="${G.kid ? "on" : ""}">🧸 Kid mode ${G.kid ? "on" : "off"}</button></span></div>
-        <p class="lobby-hint">${pads ? "🎮 Controller ready: move with the D-pad, press A to choose." : "Play now runs a whole game by itself, no host needed. Or pick rounds yourself, or use the host phone."}</p>
+        <p class="lobby-hint">${localIds().length ? localHelp() : pads ? "🎮 Controller ready: move with the D-pad, press A to choose." : "Play now runs a whole game by itself, no host needed. Or pick rounds yourself, or use the host phone."}</p>
       </div></section>`;
   }
+  const localHelp = () => `🎮 Answer with A B X Y, one controller per player${pads ? "" : " (none plugged in yet)"}. Player 1 can also press 1–4 or click.`;
   /* A cozy brick fireplace. Drop assets/media/fireplace.mp4 in to show your own crackling-fire video instead. */
   function fireplace() {
     if (T().id === "movies") return `<div class="cinema"><div class="curtain l"></div><div class="screen-glow"><span class="label">NOW SHOWING</span><b>Intermission</b><span class="reel">🎞️ 🍿 🥤</span></div><div class="curtain r"></div></div>`;
@@ -1027,10 +1053,13 @@
     Object.values(G.ans).forEach(a => counts[a.c]++);
     const big = Math.max(...counts), sz = big > 14 ? "xs" : big > 7 ? "sm" : "";
     const now = G.paused ? G.pausedAt : Date.now();
+    /* With one screen player and no phones, show which answer they picked. */
+    const locals = localIds().length, solo = locals === 1 && !phoneIds().length ? localIds()[0] : "";
     const choiceHtml = G.choices.map((c, i) => {
       const who = landed ? Object.entries(G.ans).filter(([pid, a]) => a.c === i && G.players[pid]).sort((a, b) => a[1].t - b[1].t) : [];
-      return `<li class="ch ch-${i}${rev ? (i === G.correct ? " right" : " wrong") : ""}">
-        <span class="letter">${LETTERS[i]}</span><span class="ctext">${dark ? "• • •" : esc(c)}</span>
+      const mine = solo && G.ans[solo] && G.ans[solo].c === i;
+      return `<li class="ch ch-${i}${rev ? (i === G.correct ? " right" : " wrong") : ""}${mine ? " mine" : ""}"${locals && ph === "question" ? ` data-k="ans:${i}"` : ""}>
+        <span class="letter">${LETTERS[i]}</span>${locals && ph === "question" ? `<span class="padkey pk-${i}">${PADKEYS[i]}</span>` : ""}<span class="ctext">${dark ? "• • •" : esc(c)}</span>
         ${rev && i === G.correct ? `<span class="stamp">Ding ding!</span>` : ""}
         ${landed ? `<div class="landed ${sz}">${who.map(([pid], k) => dropOrn(pid, k, rev && i === G.correct)).join("")}</div>` : ""}</li>`;
     }).join("");
@@ -1053,6 +1082,7 @@
         ${G.qi === G.golden ? `<div class="golden-tag">${T().goldIcon}<span>${esc(T().gold)}<br>double points</span></div>` : ""}
       </aside></section>`;
   }
+  const PADKEYS = ["A", "B", "X", "Y"];
   function names(ids) { return ids.map(id => G.players[id] && esc(G.players[id].name)).filter(Boolean).join(", "); }
   function revealExtras(r) {
     const res = G.res || {};
@@ -1187,6 +1217,8 @@
       case "closepicker": showPicker = false; break;
       case "playnow": showPicker = false; playNow(); break;
       case "finale": showPicker = false; startFinale(); break;
+      case "localjoin": addLocal(); break;
+      case "localdrop": dropLocal(); break;
       case "kid": G.kid = !G.kid; G.queue = []; G.playNow = false; break;
       case "replay": replayMedia(); break;
       case "close": if (showPicker || showHostQr) { showPicker = false; showHostQr = false; } else if (G.showScores) G.showScores = false; else return; break;
@@ -1195,6 +1227,7 @@
         if (!resetArmed) { resetArmed = true; clearTimeout(resetT); resetT = setTimeout(() => { resetArmed = false; renderFoot(); }, 4000); renderFoot(); return; }
         resetArmed = false; stopMedia(); G = fresh(); photos = {}; savePhotos(); save(); connect(); break;
       default:
+        if (k.startsWith("ans:")) { localAnswer(0, +k.slice(4)); return; }
         if (k.startsWith("theme:")) { setTheme(k.slice(6)); break; }
         if (k.startsWith("play:")) { showPicker = false; G.hold = false; pick(k.slice(5)); break; }
         return;
@@ -1213,6 +1246,7 @@
     const map = { " ": "next", Enter: "next", ArrowRight: "next", PageDown: "next", ArrowLeft: "prev", PageUp: "prev", a: "alarm", A: "alarm", s: "scores", S: "scores", p: "pause", P: "pause", h: "hostqr", H: "hostqr", m: "mute", M: "mute", r: "picker", R: "picker", Escape: "close" };
     const navNow = showPicker || showHostQr || ["lobby", "menu"].includes(G.phase);
     const arrows = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] };
+    if (answering() && /^[1-4]$/.test(e.key)) { e.preventDefault(); localAnswer(0, +e.key - 1); return; }
     if (navNow && arrows[e.key]) { e.preventDefault(); padMove(...arrows[e.key]); return; }
     if (navNow && e.key === "Enter" && padShow) { e.preventDefault(); padPress(); return; }
     const k = map[e.key];
@@ -1226,7 +1260,7 @@
      Works with any standard gamepad the browser sees (Xbox, PlayStation, Switch Pro, 8BitDo…).
      D-pad or left stick moves a highlight between the big screen's buttons; A presses it. */
   let padKey = "", padIx = 0, padShow = false;
-  const padPrev = {}, padNext = {};
+  const padPrev = {}, padNext = {}, padFace = {};
   const navTargets = () => {
     const modal = document.querySelector("#overlay .modal:not(.alarm-wrap)");
     const scope = modal || document;
@@ -1279,13 +1313,23 @@
     const list = navigator.getGamepads ? [...navigator.getGamepads()].filter(g => g && g.connected) : [];
     if (list.length !== pads) { pads = list.length; render(); }
     if (list.length) {
-      const now = performance.now(), down = {};
+      const now = performance.now(), down = {}, ans = answering();
+      list.sort((a, b) => a.index - b.index).forEach((gp, j) => {
+        /* Each controller answers for its own screen player: A B X Y = answers A B C D. */
+        const prev = padFace[gp.index] || (padFace[gp.index] = []);
+        for (let i = 0; i < 4; i++) {
+          const on = !!gp.buttons[i] && (gp.buttons[i].pressed || gp.buttons[i].value > .5);
+          if (on && !prev[i] && ans) localAnswer(j, i);
+          prev[i] = on;
+        }
+      });
       for (const gp of list) {
         gp.buttons.forEach((b, i) => { if (PADS[i] && (b.pressed || b.value > .5)) down[PADS[i]] = true; });
         const x = gp.axes[0] || 0, y = gp.axes[1] || 0;
         if (x < -.6) down.left = true; if (x > .6) down.right = true; if (y < -.6) down.up = true; if (y > .6) down.down = true;
       }
       for (const k of Object.values(PADS)) {
+        if (ans && ["a", "b", "x", "y"].includes(k)) { padPrev[k] = !!down[k]; continue; }
         if (down[k] && !padPrev[k]) { padFire(k); padNext[k] = now + 420; }
         else if (down[k] && ["up", "down", "left", "right"].includes(k) && now >= padNext[k]) { padFire(k); padNext[k] = now + 140; }
         padPrev[k] = !!down[k];

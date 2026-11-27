@@ -70,6 +70,8 @@ If the TV laptop reloads, the game picks up where it left off. **New game** at t
 | Start / Options | Pause or resume |
 | View / Share | Show or hide scores |
 | LB / RB | Back / next |
+
+**Play on this screen (no phones).** If nobody joins, press **🎮 Play on this screen** in the lobby. Each press adds a screen player, up to 4 (**− Remove one** takes the last one off). Player 1 uses controller 1, the keys **1–4**, or a mouse click on an answer. Players 2–4 use controllers 2–4. During a question, **A B X Y** (✕ ○ □ △ on PlayStation) pick answers **A B C D**; the other buttons work as usual. Screen players and phone players can play together. Drawing, GIF and fib games need phones, so Play now leaves them out when only screen players are in.
 | X (□) | Replay the sound or clip |
 
 The arrow keys and Enter do the same in the lobby, at intermission and in the round list.
