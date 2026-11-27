@@ -17,28 +17,40 @@ You need **Python 3** and **ffmpeg** (a free video tool).
 
 Check it worked: `ffmpeg -version` and `python --version` (on a Mac, `python3 --version`) should both print a version.
 
-## Easiest: drag and drop, then pick your favorites
+## Easiest: drag and drop
 
 1. **Windows:** drag one or more movie files onto **`Drop movies here.bat`** in this folder.
    **Mac:** double-click **`Drop movies here.command`**, drag movies into the window that opens and press Return.
-2. It works for any movie, with no list to fill in. It names the files from the movie's file name (`Elf (2003) 1080p.mkv` becomes `elf.png`, `elf.mp3` and `clip-elf.mp4`) and makes **3 choices of every file**, each from a different part of the movie: 3 pictures, 3 sound clips and 3 video clips. If it's a movie the game already has questions for, it uses the game's names so the game finds the files, and also makes 3 Kid Frame Game pictures when there's one for that movie.
-   They go in `tools/picks/<movie name>/`, with the time in each name, like `elf_2 (0-52-13).png`.
-3. Open each folder, look and listen, and **delete any you don't like**. Keep as many as you want (up to all 3): the game picks one of them at random each time that question comes up, so it's different next time. If none are good, delete all three and drop the movie again for 3 new ones.
-4. Double-click **`Finish picks.bat`** (Mac: `Finish picks.command`). It renames the ones you kept to the names the game looks for, like `elf_1.png`, `elf_2.png` and `elf_3.png` (the time comes off the name), and moves them into `assets/media`.
+2. It makes **3 versions of every file**, each from a different part of the movie: 3 pictures, 3 sound clips and 3 video clips (plus 3 kid pictures for Christmas movies that have their own). They go straight into that movie's own folder in your media folder (`media_folder` in `party\settings.ini`), already named the way the game reads them:
 
-**Already have files named with the time, like `elf_2 (0-52-13).png`?** The game can't read those names. Run `python drop_movie.py --tidy "C:\path\to\that\folder"` and it renames them all in place (subfolders too), ready to upload.
+   ```
+   \\MEDIACENTER\Media01\Trivia Media\The Lion King\
+       the-lion-king_1.png   the-lion-king_2.png   the-lion-king_3.png
+       the-lion-king_1.mp3   the-lion-king_2.mp3   the-lion-king_3.mp3
+       clip-the-lion-king_1.mp4   clip-the-lion-king_2.mp4   clip-the-lion-king_3.mp4
+       times.txt    (where in the movie each one came from)
+   ```
 
-A window stays open while it works; a movie takes about a minute. Press **Ctrl+C** to stop it.
+3. Open the folder, look and listen, and **delete any you don't like**. That's it: the game plays one of the ones left at random each time.
+4. Want more? Drop the same movie again. It only makes the numbers that are missing, so the ones you kept are never replaced.
+
+Names come from the game's list (`media-list.csv`) when the game knows the movie, otherwise from the file name (`My Movie (2004).mkv` becomes `my-movie_1.png`). A movie takes about a minute. Press **Ctrl+C** to stop.
+
+**Old files named with the time, like `elf_2 (0-52-13).png`?** Run `python drop_movie.py --tidy "C:\path\to\that\folder"` to rename them to `elf_2.png`, in place.
 
 ### Already filled in `movie_file` paths in the list?
 
-Get 3 choices for all of those at once. Open PowerShell in the `tools` folder and run:
+Do all of them at once. Open PowerShell in the `tools` folder and run:
 
 ```
 python drop_movie.py --csv media-list.csv
 ```
 
-It does every row that has a `movie_file` path, into the same `picks` folders, so you delete the ones you don't like and run **Finish picks** the same way. Movies already in `picks` are skipped, so if you stop it with Ctrl+C you can run it again and it carries on. Add `--movie elf` to do just one movie.
+Same result as dropping each movie. Files already there are skipped, so you can stop with Ctrl+C and run it again later. Add `--movie elf` to do just one movie.
+
+## Make a list of all your movies
+
+Drag your movies folder (or several) onto **`List my movies.bat`**, or double-click it and paste the folder's path. It looks through every subfolder, skips TV episodes, samples, trailers and extras, and writes **`movie-list.csv`** in this folder with each movie's title, year, and whether the game already has questions for it (`in_game`). Send that file back to get questions written for the rest.
 
 The rest of this page is the older way, which makes one file of each kind for every movie in the list at once.
 

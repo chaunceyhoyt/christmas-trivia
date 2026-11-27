@@ -53,6 +53,30 @@ def load_settings():
 CFG = load_settings()
 
 
+MEDIA_DIRS = [d for d in [CFG["media"], os.path.join(ROOT, "assets", "media")] if d]
+_index = {"at": 0.0, "files": {}}
+_index_lock = threading.Lock()
+
+
+def media_file(name):
+    """Find a media file by name anywhere in the media folders, including each movie's own subfolder
+    (Trivia Media/Elf/elf_1.png). The list is rebuilt when a name is missing, at most every 15 seconds."""
+    key = name.lower()
+    hit = _index["files"].get(key)
+    if hit and os.path.isfile(hit):
+        return hit
+    with _index_lock:
+        if time.time() - _index["at"] > 15:
+            files = {}
+            for top in MEDIA_DIRS:
+                for root, dirs, names in os.walk(top):
+                    dirs[:] = [d for d in dirs if not d.startswith(".")]
+                    for fn in names:
+                        files.setdefault(fn.lower(), os.path.join(root, fn))
+            _index["files"], _index["at"] = files, time.time()
+    return _index["files"].get(key)
+
+
 class Handler(SimpleHTTPRequestHandler):
     def __init__(self, *a, **kw):
         super().__init__(*a, directory=ROOT, **kw)
@@ -68,12 +92,12 @@ class Handler(SimpleHTTPRequestHandler):
     def translate_path(self, path):
         # Resolve any ".." first, so the checks below see the real path.
         clean = posixpath.normpath(urllib.parse.unquote(urllib.parse.urlsplit(path).path).replace("\\", "/"))
-        if clean.startswith("/assets/media/") and CFG["media"]:
+        if clean.startswith("/assets/media/"):
             name = clean[len("/assets/media/"):]
-            top = os.path.normpath(CFG["media"])
-            full = os.path.normpath(os.path.join(top, *name.split("/")))
-            if full.startswith(top + os.sep) and os.path.isfile(full):
-                return full
+            if "/" not in name:
+                hit = media_file(name)
+                if hit:
+                    return hit
         # Don't serve the tools, the party folder's settings or git files to the internet.
         if re.match(r"^/(tools|party|\.git)(/|$)", clean):
             return os.path.join(ROOT, "__not_here__")
@@ -186,7 +210,7 @@ def main():
     print("Trivia party server")
     if CFG["media"]:
         if os.path.isdir(CFG["media"]):
-            count = sum(1 for f in os.listdir(CFG["media"]) if os.path.splitext(f)[1].lower() in (".png", ".jpg", ".mp3", ".mp4"))
+            count = sum(1 for _, _, fs in os.walk(CFG["media"]) for f in fs if os.path.splitext(f)[1].lower() in (".png", ".jpg", ".mp3", ".mp4"))
             print(f"  Media folder: {CFG['media']}  ({count} files)")
         else:
             print(f"  Can't open the media folder {CFG['media']}. Is the network drive connected? Using assets/media instead.")

@@ -46,19 +46,19 @@ Keep the game folder on the computer itself rather than the network drive: it st
 
 ## Step 3: Set up the media folder on your network drive
 
-1. Make a folder on the network drive for all the game's media, like `Z:\Trivia Media`. Put every picture, sound and clip straight in it, no subfolders, named like `elf_1.png`, `elf_2.mp3`, `clip-elf_3.mp4`.
+1. Make a folder on the network drive for all the game's media, like `\\MEDIACENTER\Media01\Trivia Media`. Files can sit right in it or in a folder per movie (that's what the drop tool makes), named like `elf_1.png`, `elf_2.mp3`, `clip-elf_3.mp4`.
 2. In the game folder, open `party\settings.ini` in Notepad and set the folder:
 
    ```
-   media_folder = Z:\Trivia Media
+   media_folder = \\MEDIACENTER\Media01\Trivia Media
    ```
 
-   A `\\server\share\Trivia Media` path works too. It's a little more reliable than a drive letter, because a mapped drive letter only connects once you've logged in and opened it.
+   It's already set to that. A drive letter like `Z:\Trivia Media` works too, but a `\\server\share` path is more reliable, because a mapped drive letter only connects once you've logged in and opened it.
 3. Save the file.
 
 The files GitHub already has (A Christmas Story, Charlie Brown, A Disney Christmas Gift) are in the game folder's `assets\media`. The game uses those as a backup, so copy them to the network folder too if you want everything in one place.
 
-**Making new media:** the tools in `tools\` now finish straight into this folder. Drop movies on `Drop movies here.bat`, delete the choices you don't like in `tools\picks`, then double-click `Finish picks.bat`. The files land in `Z:\Trivia Media`, named correctly. Nothing gets uploaded to GitHub.
+**Making new media:** drop movies on `tools\Drop movies here.bat`. Each movie gets its own folder inside the media folder (like `Trivia Media\The Lion King\`) with 3 versions of each file, named the way the game reads them. Delete the ones you don't like, and that's it. The game finds files in those movie folders by itself. Nothing gets uploaded to GitHub.
 
 ## Step 4: Start the party
 
