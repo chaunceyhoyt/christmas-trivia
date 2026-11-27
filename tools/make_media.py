@@ -11,7 +11,8 @@ first to see which file it picked for each movie. If it picks the wrong one, put
 file name in that row's movie_file column.
 
 For each row it writes, into ../assets/media (next to this tools folder):
-  - frame_png   a still picture, about 1920x1080
+  - frame_png       a still picture for The Frame Game, about 1920x1080
+  - kid_frame_png   a still picture for the Kid Frame Game
   - sound_mp3   a short sound clip (a few seconds)
   - clip_mp4    a short video clip, 720p
 
@@ -259,13 +260,15 @@ def main():
             return path
 
         try:
-            # Picture
-            if args.only in (None, "frames"):
-                out = target("frame_png")
+            # Pictures: the grown-up Frame Game picture and the Kid Frame Game picture
+            for file_col, time_col in (("frame_png", "frame_time"), ("kid_frame_png", "kid_frame_time")):
+                if args.only not in (None, "frames"):
+                    break
+                out = target(file_col)
                 if out == "skip":
                     skipped += 1
                 elif out:
-                    at = parse_time(row.get("frame_time"))
+                    at = parse_time(row.get(time_col))
                     if at is None and args.candidates > 0:
                         folder = os.path.join(args.out, "candidates")
                         os.makedirs(folder, exist_ok=True)
@@ -281,13 +284,13 @@ def main():
                                 if brightness(p) >= DARK_LEVEL:
                                     break
                                 os.remove(p)
-                        print(f"  {args.candidates} options saved in {folder}. Pick one, put its time in frame_time, and run again.")
+                        print(f"  {args.candidates} options for {os.path.basename(out)} saved in {folder}. Pick one, put its time in {time_col}, and run again.")
                     else:
                         _, t, was_random = make_frame(movie, at, out, total)
                         made += 1
                         print(f"  {os.path.basename(out)}  at {fmt_time(t)}{'  (random)' if was_random else ''}")
                         if was_random:
-                            record["frame_time"] = fmt_time(t)
+                            record[time_col] = fmt_time(t)
             # Sound
             if args.only in (None, "sounds"):
                 out = target("sound_mp3")
@@ -327,7 +330,7 @@ def main():
     if chosen:
         log = os.path.splitext(args.csv)[0] + ".chosen.csv"
         with open(log, "w", newline="", encoding="utf-8-sig") as f:
-            w = csv.DictWriter(f, fieldnames=["movie", "frame_time", "sound_start", "clip_start"])
+            w = csv.DictWriter(f, fieldnames=["movie", "frame_time", "kid_frame_time", "sound_start", "clip_start"])
             w.writeheader()
             w.writerows(chosen)
         print(f"\nRandom times used are saved in {log}. Copy any you like into {os.path.basename(args.csv)} to keep them.")

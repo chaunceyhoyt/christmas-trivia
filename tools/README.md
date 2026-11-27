@@ -21,7 +21,7 @@ Check it worked: `ffmpeg -version` and `python --version` (on a Mac, `python3 --
 
 Leave them where they are. Point the script at the folder they're in (subfolders are searched too). If they're in several places, repeat `--movies`, like `--movies "D:\Movies" --movies "E:\Kids Movies"`. You can also put a movie's full path in its `movie_file` column, like `D:\Movies\Elf (2003).mkv`.
 
-The output file names (`frame_png`, `sound_mp3`, `clip_mp4`) are already filled in for every movie, so there's nothing to type there. You **don't** need to rename, move or list your movie files: the script matches each movie by its title, so `Home Alone (1990) 1080p BluRay.mkv` is found as Home Alone (and not mixed up with Home Alone 2). Movies you don't have are simply skipped.
+The output file names (`frame_png`, `kid_frame_png`, `sound_mp3`, `clip_mp4`) are already filled in, one row per movie, so there's nothing to type there. A blank file name just means that movie isn't in that round (Bad Santa is only in The Frame Game, so it has no sound or clip), and the script skips it. You **don't** need to rename, move or list your movie files: the script matches each movie by its title, so `Home Alone (1990) 1080p BluRay.mkv` is found as Home Alone (and not mixed up with Home Alone 2). Movies you don't have are simply skipped.
 
 ## Check the matches first
 
@@ -49,7 +49,8 @@ The files land in `assets/media`, ready to upload to GitHub.
 
 | Column | What to put |
 | --- | --- |
-| `frame_time` | When to grab the picture, like `0:52:13`. Blank = a random moment. |
+| `frame_time` | When to grab The Frame Game picture, like `0:52:13`. Blank = a random moment. |
+| `kid_frame_time` | Same, for the Kid Frame Game picture. |
 | `sound_start` | When the famous line starts, like `1:02:33`. Fill this in for soundbites: a random sound is almost never a good one. |
 | `sound_seconds` | How long the sound clip is. 6 is the default. |
 | `clip_start` | When the video clip starts. Blank = random. |
