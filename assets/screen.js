@@ -62,6 +62,12 @@
       else { const el = document.createElement(q[4].video ? "video" : "audio"); el.preload = "metadata"; el.onloadedmetadata = () => done(true); el.onerror = () => done(false); el.src = src; }
     }));
   }
+  /* How many questions a round plays: its own "pick", or 10 for regular, surprise and kid rounds (tiebreakers play them all). */
+  const howMany = r => r.pick || (["feature", "alarm", "kid"].includes(r.kind) && !r.extra && r.qs.length ? 10 : 0);
+  /* Which questions each round has already asked. Kept across new games so next time brings new ones. */
+  let asked = {};
+  try { asked = JSON.parse(localStorage.getItem("xmas-asked-v1") || "{}") || {}; } catch (e) {}
+  const saveAsked = () => { try { localStorage.setItem("xmas-asked-v1", JSON.stringify(asked)); } catch (e) {} };
   const playable = r => r.qs.map((q, i) => i).filter(i => !mediaSrc(r.qs[i]) || mediaOk[r.id + ":" + i]);
 
   /* ---------- links + QR ---------- */
@@ -250,7 +256,7 @@
     main.send("state", s);
     host.send("hoststate", Object.assign({}, s, {
       secret: q ? { answer: G.correct >= 0 ? G.choices[G.correct] : q[1], correct: G.correct, note: q[3] || "", q: q[0], choices: G.choices, ans: G.ans } : null,
-      rounds: R.map(x => ({ id: x.id, title: x.title, kind: x.kind, n: x.kind === "draw" || x.kind === "fib" ? 1 : x.kind === "gif" ? (GIFKEY ? 1 : 0) : playable(x).length, total: x.qs.length, played: G.played.includes(x.id),
+      rounds: R.map(x => ({ id: x.id, title: x.title, kind: x.kind, n: x.kind === "draw" || x.kind === "fib" ? 1 : x.kind === "gif" ? (GIFKEY ? 1 : 0) : howMany(x) ? Math.min(howMany(x), playable(x).length) : playable(x).length, total: x.qs.length, played: G.played.includes(x.id),
         c1: x.c1 || "", timer: timerFor(x), extra: !!x.extra })),
       queue: G.queue.slice(), surprise: G.surprise, muted: SFX.muted, music: SFX.musicOn,
       hasMusic: SFX.has("music_lobby") || SFX.has("music_think")
@@ -279,7 +285,20 @@
     if (r.kind === "draw") return startDraw(r);
     if (r.kind === "gif") return startGif(r);
     if (r.kind === "fib") return startFib(r);
-    const order = playable(r); if (!order.length) return;
+    let order = playable(r); if (!order.length) return;
+    /* Play a random handful of a round's questions, using ones not asked before first, so replays feel new. */
+    const want = howMany(r);
+    if (want && order.length > want) {
+      const seen = asked[r.id] || [], fresh = shuffle(order.filter(i => !seen.includes(i)));
+      if (fresh.length >= want) { order = fresh.slice(0, want); asked[r.id] = seen.concat(order); }
+      else {
+        // Use every question not asked yet, top up with older ones, and start a new cycle.
+        order = fresh.concat(shuffle(order.filter(i => !fresh.includes(i))).slice(0, want - fresh.length));
+        asked[r.id] = order.slice();
+      }
+      if (r.kind !== "media" && !r.pick) order.sort((x, y) => toughOf(r, x) - toughOf(r, y) || x - y); // easy first, building to hard
+      saveAsked();
+    }
     stopMedia();
     G.rid = id; G.order = order; G.qi = 0; G.showScores = false; G.ans = {}; G.res = null; G.tEnd = 0;
     G.golden = order.length > 4 ? 1 + Math.floor(Math.random() * (order.length - 1)) : -1;
