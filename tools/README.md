@@ -17,9 +17,11 @@ You need **Python 3** and **ffmpeg** (a free video tool).
 
 Check it worked: `ffmpeg -version` and `python --version` (on a Mac, `python3 --version`) should both print a version.
 
-## Put your movies in one folder
+## Where your movies are
 
-Any folder works, and subfolders are fine. You **don't** need to rename the files or type their names anywhere: the script matches each movie by its title, so `Home Alone (1990) 1080p BluRay.mkv` is found as Home Alone (and not mixed up with Home Alone 2). Movies you don't have are simply skipped.
+Leave them where they are. Point the script at the folder they're in (subfolders are searched too). If they're in several places, repeat `--movies`, like `--movies "D:\Movies" --movies "E:\Kids Movies"`. You can also put a movie's full path in its `movie_file` column, like `D:\Movies\Elf (2003).mkv`.
+
+The output file names (`frame_png`, `sound_mp3`, `clip_mp4`) are already filled in for every movie, so there's nothing to type there. You **don't** need to rename, move or list your movie files: the script matches each movie by its title, so `Home Alone (1990) 1080p BluRay.mkv` is found as Home Alone (and not mixed up with Home Alone 2). Movies you don't have are simply skipped.
 
 ## Check the matches first
 

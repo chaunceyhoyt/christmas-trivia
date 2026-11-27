@@ -200,7 +200,8 @@ def make_clip(movie, start, secs, out):
 def main():
     ap = argparse.ArgumentParser(description="Make Frame Game pictures, Soundbites and Clip Show clips from your movie files.")
     ap.add_argument("csv", help="media-list.csv")
-    ap.add_argument("--movies", default=".", help="folder your movie files are in (movie_file can be just the file name)")
+    ap.add_argument("--movies", action="append", metavar="FOLDER",
+                    help="a folder with your movies (subfolders are searched too). Use it more than once for several folders or drives.")
     ap.add_argument("--out", default=DEFAULT_OUT, help=f"where to save the files (default: {DEFAULT_OUT})")
     ap.add_argument("--only", choices=["frames", "sounds", "clips"], help="make only one kind of file")
     ap.add_argument("--movie", help="only rows whose movie name contains this text, like --movie elf")
@@ -215,9 +216,10 @@ def main():
     with open(args.csv, newline="", encoding="utf-8-sig") as f:
         rows = list(csv.DictReader(f))
 
-    movies = find_movies(args.movies)
+    folders = args.movies or ["."]
+    movies = [m for folder in folders for m in find_movies(folder)]
     best = best_fit(movies, {(r.get("movie") or "").strip() for r in rows if (r.get("movie") or "").strip()})
-    print(f"Found {len(movies)} movie file{'s' if len(movies) != 1 else ''} in {os.path.abspath(args.movies)}")
+    print(f"Found {len(movies)} movie file{'s' if len(movies) != 1 else ''} in {', '.join(os.path.abspath(f) for f in folders)}")
     chosen, made, skipped, problems, missing = [], 0, 0, [], []
     for row in rows:
         name = (row.get("movie") or "").strip()
@@ -225,7 +227,8 @@ def main():
             continue
         src = (row.get("movie_file") or "").strip().strip('"')
         if src:
-            movie = src if os.path.isabs(src) else os.path.join(args.movies, src)
+            # A full path is used as-is; a bare file name is looked for in the --movies folders.
+            movie = src if os.path.isabs(src) else next((os.path.join(f, src) for f in folders if os.path.exists(os.path.join(f, src))), os.path.join(folders[0], src))
             if not os.path.exists(movie):
                 problems.append(f"{name}: can't find the movie file {movie}")
                 continue
@@ -235,7 +238,7 @@ def main():
                 (missing if note == "no file found" else problems).append(name if note == "no file found" else f"{name}: {note}")
                 continue
         if args.check:
-            print(f"  {name:<36} -> {os.path.relpath(movie, args.movies)}")
+            print(f"  {name:<36} -> {movie}")
             continue
         try:
             total = duration(movie)
