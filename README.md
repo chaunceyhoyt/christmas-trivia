@@ -1,6 +1,10 @@
 # Rewind Christmas Trivia
 
-A Christmas movie trivia night styled like Grandma’s over-decorated living room. It has three screens:
+A Christmas movie trivia night styled like Grandma’s over-decorated living room.
+
+**Run it from your own computer** (media on your own drive, phones join from any network): see [LOCAL-SETUP.md](LOCAL-SETUP.md).
+
+It has three screens:
 
 | Screen | Who uses it | Page |
 | --- | --- | --- |

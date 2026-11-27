@@ -28,6 +28,18 @@ from make_media import (DARK_LEVEL, DEFAULT_OUT, HERE, VIDEO_EXT, brightness, du
                         make_clip, make_sound, match_score, need, parse_time, words, JUNK)
 
 PICKS = os.path.join(HERE, "picks")
+
+
+def party_media_folder():
+    """The media folder from party/settings.ini (like a network drive), if one is set. Finished files go there."""
+    import configparser
+    cp = configparser.ConfigParser()
+    cp.read(os.path.join(HERE, "..", "party", "settings.ini"), encoding="utf-8-sig")
+    folder = cp.get("party", "media_folder", fallback="").strip().strip('"')
+    return os.path.expandvars(os.path.expanduser(folder)) if folder else ""
+
+
+FINISH_TO = party_media_folder() or DEFAULT_OUT
 CSV = os.path.join(HERE, "media-list.csv")
 CHOICES = 3
 # (column with the game's file name, kind, column with its length)
@@ -206,7 +218,7 @@ def main():
     ap.add_argument("--csv", metavar="FILE", help="make choices for every row of this list that has a movie_file path, like --csv media-list.csv")
     ap.add_argument("--movie", help="with --csv: only rows whose movie name contains this text, like --movie elf")
     ap.add_argument("--tidy", metavar="FOLDER", help="rename files like elf_2 (0-52-13).png in this folder (and its subfolders) to elf_2.png, in place")
-    ap.add_argument("--out", default=DEFAULT_OUT, help=f"where finished files go (default: {DEFAULT_OUT})")
+    ap.add_argument("--out", default=FINISH_TO, help=f"where finished files go (default: the media_folder in party/settings.ini, or else {DEFAULT_OUT})")
     args = ap.parse_args()
     if args.tidy:
         folder = os.path.abspath(args.tidy.strip('"'))

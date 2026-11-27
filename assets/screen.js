@@ -87,7 +87,16 @@
   const playable = r => r.qs.map((q, i) => i).filter(i => !mediaSrc(r.qs[i]) || mediaOk[r.id + ":" + i]);
 
   /* ---------- links + QR ---------- */
-  const base = location.href.replace(/[#?].*$/, "").replace(/[^/]*$/, "");
+  let base = location.href.replace(/[#?].*$/, "").replace(/[^/]*$/, "");
+  /* Run from this computer with Start party.bat, the big screen is on localhost, which phones can't reach.
+     The party server tells us the public address, and the QR codes use that instead. */
+  if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) {
+    const ask = () => fetch("party-info.json", { cache: "no-store" }).then(r => r.ok ? r.json() : null).then(info => {
+      if (info && info.publicUrl) { const b = info.publicUrl.replace(/\/?$/, "/"); if (b !== base) { base = b; render(); } }
+      setTimeout(ask, info && info.publicUrl ? 20000 : 3000);  /* keep checking: the address changes if the tunnel restarts */
+    }).catch(() => setTimeout(ask, 5000));
+    ask();
+  }
   const joinUrl = () => base + "play.html?g=" + G.code;
   const hostUrl = () => base + "host.html?g=" + G.code + "#" + G.pin;
   const shortJoin = () => (base.replace(/^https?:\/\//, "") + "play.html");

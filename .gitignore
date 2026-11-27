@@ -2,3 +2,7 @@ assets/media/candidates/
 tools/*.chosen.csv
 tools/picks/
 __pycache__/
+
+# Media files live on your own computer or network drive (see LOCAL-SETUP.md), not in git.
+assets/media/*
+!assets/media/README.md
