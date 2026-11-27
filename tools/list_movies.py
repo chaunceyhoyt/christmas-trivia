@@ -19,7 +19,7 @@ from make_media import JUNK, VIDEO_EXT, words
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, "movie-list.csv")
-GAME_FILES = [os.path.join(HERE, "..", "assets", "questions.js"), os.path.join(HERE, "..", "assets", "questions-movies.js")]
+GAME_FILES = [os.path.join(HERE, "..", "assets", f) for f in ("questions.js", "questions-movies.js", "questions-library.js")]
 YEAR = re.compile(r"(?<!\d)(19[2-9]\d|20[0-4]\d)(?!\d)")
 EPISODE = re.compile(r"\bS\d{1,2}\s?E\d{1,3}\b|\b\d{1,2}x\d{2}\b|\bSeason\s?\d+\b|\bEpisode\s?\d+\b", re.I)
 SKIP_DIRS = {"extras", "featurettes", "behind the scenes", "deleted scenes", "trailers", "samples", "sample",
@@ -149,8 +149,9 @@ def list_media(folder):
             g["clips" if ext == "mp4" else "sounds" if ext == "mp3" else "pictures"] += 1
     rows = []
     for g in sorted(groups.values(), key=lambda g: g["title"].lower()):
-        # Christmas questions name the file ("media/elf.png"); Movie Night lists the name ("the-lion-king").
-        in_game = any(f"media/{s}." in raw or f"media/clip-{s}." in raw or f'"{s}"' in raw for s in g["slugs"])
+        # A movie counts only if a picture/sound/clip question uses its files: Christmas questions name the file
+        # ("media/elf.png"); Movie Night lists start each movie with its file name (["the-lion-king",...).
+        in_game = any(f"media/{s}." in raw or f"media/clip-{s}." in raw or f'["{s}",' in raw for s in g["slugs"])
         rows.append({"title": g["title"], "pictures": g["pictures"], "sounds": g["sounds"], "clips": g["clips"],
                      "in_game": "yes" if in_game else "no", "folder": g["folder"]})
     with open(MEDIA_OUT, "w", newline="", encoding="utf-8-sig") as f:

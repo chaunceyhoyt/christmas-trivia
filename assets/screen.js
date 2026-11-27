@@ -62,6 +62,11 @@
   });
   /* Each file can come in up to 3 versions: elf_1.png, elf_2.png, elf_3.png (or just elf.png).
      A picture can be a .jpg with the same name. Each time a question comes up it uses one at random. */
+  /* Run from this computer (Start party.bat), the party server sends the list of every media file in one go,
+     instead of the big screen checking each possible name. Elsewhere (like GitHub Pages) it checks one by one. */
+  let mediaList = null;
+  const loadMediaList = () => fetch("party-media.json", { cache: "no-store" }).then(r => r.ok ? r.json() : null)
+    .then(j => { if (j && Array.isArray(j.files)) mediaList = new Set(j.files); }).catch(() => {});
   function probeMedia() {
     R.forEach(r => r.qs.forEach((q, i) => {
       const src = mediaSrc(q); if (!src) return;
@@ -69,7 +74,7 @@
       const dot = src.lastIndexOf("."), stem = src.slice(0, dot), ext = src.slice(dot);
       const names = [src, ...[1, 2, 3].map(n => `${stem}_${n}${ext}`)];
       if (kind === "img") names.push(...names.map(n => n.replace(/\.png$/i, ".jpg")).filter(n => !names.includes(n)));
-      Promise.all(names.map(n => exists(n, kind))).then(res => {
+      (mediaList ? Promise.resolve(names.map(n => mediaList.has(n.split("/").pop().toLowerCase()))) : Promise.all(names.map(n => exists(n, kind)))).then(res => {
         const found = names.filter((n, j) => res[j]);
         /* Numbered versions win over the plain name, and a PNG over a JPG of the same version. */
         const numbered = found.filter(n => /_\d\.[a-z0-9]+$/i.test(n));
@@ -1293,7 +1298,7 @@
 
   $("#lightsTop").innerHTML = stringLights(28);
   connect();
-  probeMedia();
+  loadMediaList().then(probeMedia);
   let fireOk = false;
   { const v = document.createElement("video"); v.preload = "metadata"; v.onloadedmetadata = () => { fireOk = true; render(); }; v.src = "assets/media/fireplace.mp4"; }
   render();

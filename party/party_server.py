@@ -58,6 +58,25 @@ _index = {"at": 0.0, "files": {}}
 _index_lock = threading.Lock()
 
 
+def media_names():
+    """Every media file name the party can serve, rescanned if the list is more than a few seconds old.
+    The big screen asks for this once at startup instead of checking thousands of names one by one."""
+    with _index_lock:
+        if time.time() - _index["at"] > 5:
+            _scan()
+    return sorted(_index["files"])
+
+
+def _scan():
+    files = {}
+    for top in MEDIA_DIRS:
+        for root, dirs, names in os.walk(top):
+            dirs[:] = [d for d in dirs if not d.startswith(".")]
+            for fn in names:
+                files.setdefault(fn.lower(), os.path.join(root, fn))
+    _index["files"], _index["at"] = files, time.time()
+
+
 def media_file(name):
     """Find a media file by name anywhere in the media folders, including each movie's own subfolder
     (Trivia Media/Elf/elf_1.png). The list is rebuilt when a name is missing, at most every 15 seconds."""
@@ -67,13 +86,7 @@ def media_file(name):
         return hit
     with _index_lock:
         if time.time() - _index["at"] > 15:
-            files = {}
-            for top in MEDIA_DIRS:
-                for root, dirs, names in os.walk(top):
-                    dirs[:] = [d for d in dirs if not d.startswith(".")]
-                    for fn in names:
-                        files.setdefault(fn.lower(), os.path.join(root, fn))
-            _index["files"], _index["at"] = files, time.time()
+            _scan()
     return _index["files"].get(key)
 
 
@@ -108,8 +121,8 @@ class Handler(SimpleHTTPRequestHandler):
         return None
 
     def do_GET(self):
-        if self.path.split("?")[0] == "/party-info.json":
-            body = json.dumps(state).encode()
+        if self.path.split("?")[0] in ("/party-info.json", "/party-media.json"):
+            body = json.dumps(state if self.path.startswith("/party-info") else {"files": media_names()}).encode()
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
             self.send_header("Content-Length", str(len(body)))
