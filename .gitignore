@@ -7,3 +7,4 @@ __pycache__/
 assets/media/*
 !assets/media/README.md
 tools/movie-list.csv
+tools/trivia-media-list.csv

@@ -51,11 +51,14 @@ python drop_movie.py --csv media-list.csv
 
 Same result as dropping each movie. Files already there are skipped, so you can stop with Ctrl+C and run it again later. Add `--movie elf` to do just one movie.
 
-## Make a list of all your movies
+## Make a list of your movies
 
-Drag your movies folder (or several) onto **`List my movies.bat`**, or double-click it and paste the folder's path. It looks through every subfolder, skips TV episodes, samples, trailers and extras, and writes **`movie-list.csv`** in this folder with each movie's title, year, and whether the game already has questions for it (`in_game`). Send that file back to get questions written for the rest.
+Double-click **`List my movies.bat`**.
 
-The rest of this page is the older way, which makes one file of each kind for every movie in the list at once.
+- **Press Enter** to list your **Trivia Media** folder (the `media_folder` in `party\settings.ini`). You get **`trivia-media-list.csv`** with every movie you've made files for, how many pictures, sounds and clips each has, and whether the game already has questions that use them (`in_game`).
+- **Or drag your movies folder** into the window (or onto the .bat) to list every movie you own. It skips TV episodes, samples, trailers and extras, and writes **`movie-list.csv`** with each movie's title, year and `in_game`.
+
+Send either file back to get questions written for the movies marked `no`.
 
 ## Where your movies are
 

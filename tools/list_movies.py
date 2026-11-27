@@ -103,12 +103,77 @@ def game_text():
     return " " + " ".join(words(text)) + " "
 
 
+# ---------- The Trivia Media folder: what the drop tool has already made ----------
+MEDIA_FILE = re.compile(r"^(?P<clip>clip-)?(?P<slug>.+?)_(?P<n>\d)\.(?P<ext>png|jpg|mp3|mp4)$", re.I)
+MEDIA_OUT = os.path.join(HERE, "trivia-media-list.csv")
+
+
+def media_folder_setting():
+    try:
+        from drop_movie import party_media_folder
+        return party_media_folder()
+    except Exception:
+        return ""
+
+
+def is_media_folder(folder):
+    """True for a folder the drop tool fills (movie folders holding files like elf_1.png), not a movie library."""
+    try:
+        for d in os.listdir(folder)[:200]:
+            sub = os.path.join(folder, d)
+            names = os.listdir(sub) if os.path.isdir(sub) else [d]
+            if any(MEDIA_FILE.match(n) for n in names):
+                return True
+    except OSError:
+        pass
+    return False
+
+
+def list_media(folder):
+    raw = ""
+    for f in GAME_FILES:
+        try:
+            raw += open(f, encoding="utf-8").read().lower()
+        except OSError:
+            pass
+    groups = {}
+    for root, _, files in os.walk(folder):
+        for fn in files:
+            m = MEDIA_FILE.match(fn)
+            if not m:
+                continue
+            title = os.path.basename(root) if root != folder else m["slug"]
+            g = groups.setdefault(root if root != folder else "~" + m["slug"], {"title": title, "slugs": set(), "pictures": 0, "sounds": 0, "clips": 0, "folder": root})
+            g["slugs"].add(m["slug"].lower())
+            ext = m["ext"].lower()
+            g["clips" if ext == "mp4" else "sounds" if ext == "mp3" else "pictures"] += 1
+    rows = []
+    for g in sorted(groups.values(), key=lambda g: g["title"].lower()):
+        # Christmas questions name the file ("media/elf.png"); Movie Night lists the name ("the-lion-king").
+        in_game = any(f"media/{s}." in raw or f"media/clip-{s}." in raw or f'"{s}"' in raw for s in g["slugs"])
+        rows.append({"title": g["title"], "pictures": g["pictures"], "sounds": g["sounds"], "clips": g["clips"],
+                     "in_game": "yes" if in_game else "no", "folder": g["folder"]})
+    with open(MEDIA_OUT, "w", newline="", encoding="utf-8-sig") as f:
+        w = csv.DictWriter(f, fieldnames=["title", "pictures", "sounds", "clips", "in_game", "folder"])
+        w.writeheader()
+        w.writerows(rows)
+    have = sum(r["in_game"] == "yes" for r in rows)
+    print(f"\nFound {len(rows)} movies with trivia files. {have} are already used by the game's questions, {len(rows) - have} aren't yet.")
+    print(f"Saved the list to {MEDIA_OUT}")
+    print("Send that file (or paste its contents) back to get questions for the rest.")
+
+
 def main():
     folders = [a.strip().strip('"') for a in sys.argv[1:]]
     if not folders:
-        print("Drag your movies folder into this window (or type its path), then press Enter.")
-        print(r"Example: \\MEDIACENTER\Media01\Movies")
+        default = media_folder_setting()
+        print("Drag a folder into this window (or type its path), then press Enter.")
+        print("  Your movies folder lists every movie you own.")
+        if default:
+            print(f"  Or just press Enter to list what's in your Trivia Media folder: {default}")
         text = input("> ").strip()
+        if not text and default:
+            text = default
         if not text:
             return
         folders = [text.strip('"')] if os.path.isdir(text.strip('"')) else [p.strip('"') for p in shlex.split(text, posix=os.name != "nt")]
@@ -118,6 +183,9 @@ def main():
         folders = [f for f in folders if f not in missing]
         if not folders:
             return
+    if len(folders) == 1 and is_media_folder(folders[0]):
+        print(f"{folders[0]} is a Trivia Media folder. Listing the movies you've made files for…")
+        return list_media(folders[0])
     print("Looking through " + ", ".join(folders) + " (this can take a minute on a network drive)…")
     movies = find_movies(folders)
     known = game_text()

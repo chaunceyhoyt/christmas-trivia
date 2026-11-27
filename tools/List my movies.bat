@@ -1,6 +1,6 @@
 @echo off
-rem Drag your movies folder onto this file (or double-click and paste the path).
-rem It writes movie-list.csv in this folder: every movie, its year, and whether the game has questions for it.
+rem Double-click and press Enter to list your Trivia Media folder, or drag your movies folder onto this file.
+rem It writes trivia-media-list.csv or movie-list.csv here, with whether the game has questions for each movie.
 cd /d "%~dp0"
 set PY=python
 where py >nul 2>nul && set PY=py
