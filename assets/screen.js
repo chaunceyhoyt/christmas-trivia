@@ -46,22 +46,38 @@
   const active = () => Object.keys(G.players).filter(id => Date.now() - (G.players[id].seen || 0) < 45000 && id !== artistNow());
 
   /* ---------- media availability ---------- */
-  const mediaOk = {}, imgSrc = {};
+  const mediaOk = {}, variants = {}, useSrc = {};
   const mediaSrc = q => q[4] && (q[4].img || q[4].audio || q[4].video);
+  /* Does this file exist? Pictures load as images, sounds and clips as media. */
+  const exists = (url, kind) => new Promise(ok => {
+    if (kind === "img") { const im = new Image(); im.onload = () => ok(true); im.onerror = () => ok(false); im.src = url; return; }
+    const el = document.createElement(kind === "video" ? "video" : "audio"); el.preload = "metadata";
+    el.onloadedmetadata = () => { ok(true); el.removeAttribute("src"); el.load(); }; el.onerror = () => ok(false); el.src = url;
+  });
+  /* Each file can come in up to 3 versions: elf_1.png, elf_2.png, elf_3.png (or just elf.png).
+     A picture can be a .jpg with the same name. Each time a question comes up it uses one at random. */
   function probeMedia() {
     R.forEach(r => r.qs.forEach((q, i) => {
       const src = mediaSrc(q); if (!src) return;
-      const k = r.id + ":" + i, done = ok => { if (mediaOk[k] !== ok) { mediaOk[k] = ok; render(); publish(); } };
-      if (q[4].img) {
-        /* Pictures are PNG, but a JPG with the same name works too. */
-        const alt = src.replace(/\.png$/i, ".jpg"), im = new Image();
-        im.onload = () => { imgSrc[src] = im.src.endsWith(".jpg") && alt !== src ? alt : src; done(true); };
-        im.onerror = () => { if (alt !== src && !im.dataset.tried) { im.dataset.tried = "1"; im.src = alt; } else done(false); };
-        im.src = src;
-      }
-      else { const el = document.createElement(q[4].video ? "video" : "audio"); el.preload = "metadata"; el.onloadedmetadata = () => done(true); el.onerror = () => done(false); el.src = src; }
+      const kind = q[4].img ? "img" : q[4].video ? "video" : "audio", k = r.id + ":" + i;
+      const dot = src.lastIndexOf("."), stem = src.slice(0, dot), ext = src.slice(dot);
+      const names = [src, ...[1, 2, 3].map(n => `${stem}_${n}${ext}`)];
+      if (kind === "img") names.push(...names.map(n => n.replace(/\.png$/i, ".jpg")).filter(n => !names.includes(n)));
+      Promise.all(names.map(n => exists(n, kind))).then(res => {
+        const found = names.filter((n, j) => res[j]);
+        /* Numbered versions win over the plain name, and a PNG over a JPG of the same version. */
+        const numbered = found.filter(n => /_\d\.[a-z0-9]+$/i.test(n));
+        let list = numbered.length ? numbered : found;
+        list = list.filter(n => !(/\.jpg$/i.test(n) && list.includes(n.replace(/\.jpg$/i, ".png"))));
+        variants[src] = list;
+        const ok = list.length > 0;
+        if (mediaOk[k] !== ok) { mediaOk[k] = ok; render(); publish(); }
+      });
     }));
   }
+  /* The version this question uses this time. Chosen fresh when the question comes up. */
+  const srcFor = src => useSrc[src] || (variants[src] && variants[src][0]) || src;
+  const rollMedia = q => { const src = mediaSrc(q), list = src && variants[src]; if (list && list.length) useSrc[src] = list[Math.floor(Math.random() * list.length)]; };
   /* How many questions a round plays: its own "pick", or 10 for regular, surprise and kid rounds (tiebreakers play them all). */
   const howMany = r => r.pick || (["feature", "alarm", "kid"].includes(r.kind) && !r.extra && r.qs.length ? 10 : 0);
   /* Which questions each round has already asked. Kept across new games so next time brings new ones. */
@@ -451,7 +467,7 @@
     const m = q[4] || {}, words = String(q[0]).split(/\s+/).length;
     G.readMs = m.draw ? 4500 : m.tune || m.audio || m.video ? 1800 : Math.min(6500, Math.max(2500, 1200 + words * 230)) + (G.kid ? 1500 : 0);
     G.stepAt = Date.now() + G.readMs;
-    startMedia(q, true);
+    rollMedia(q); startMedia(q, true);
     SFX.play("question");
     if (G.qi === G.golden) SFX.play("golden", 0.35);
   }
@@ -654,11 +670,11 @@
       media.el = cv; media.kind = "draw"; step();
     }
     else if (m.tune) { media.kind = "tune"; if (play) SFX.tune(m.tune, m.bpm || 120); }
-    else if (m.img) { const im = new Image(); im.src = imgSrc[m.img] || m.img; im.alt = ""; im.className = "media-img fx-" + (m.fx || "none"); media.el = im; media.kind = "img"; }
-    else if (m.audio) { const a = new Audio(m.audio); a.muted = SFX.muted; if (play) a.play().catch(() => {}); media.audio = a; media.kind = "audio"; }
+    else if (m.img) { const im = new Image(); im.src = srcFor(m.img); im.alt = ""; im.className = "media-img fx-" + (m.fx || "none"); media.el = im; media.kind = "img"; }
+    else if (m.audio) { const a = new Audio(srcFor(m.audio)); a.muted = SFX.muted; if (play) a.play().catch(() => {}); media.audio = a; media.kind = "audio"; }
     else if (m.video) {
       const v = document.createElement("video");
-      v.src = m.video + (m.start || m.end ? `#t=${m.start || 0}${m.end ? "," + m.end : ""}` : ""); v.playsInline = true; v.muted = SFX.muted; v.className = "media-video";
+      v.src = srcFor(m.video) + (m.start || m.end ? `#t=${m.start || 0}${m.end ? "," + m.end : ""}` : ""); v.playsInline = true; v.muted = SFX.muted; v.className = "media-video";
       if (play) v.play().catch(() => {});
       media.el = v; media.kind = "video";
     }

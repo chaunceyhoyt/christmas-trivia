@@ -23,8 +23,10 @@ Check it worked: `ffmpeg -version` and `python --version` (on a Mac, `python3 --
    **Mac:** double-click **`Drop movies here.command`**, drag movies into the window that opens and press Return.
 2. It works for any movie, with no list to fill in. It names the files from the movie's file name (`Elf (2003) 1080p.mkv` becomes `elf.png`, `elf.mp3` and `clip-elf.mp4`) and makes **3 choices of every file**, each from a different part of the movie: 3 pictures, 3 sound clips and 3 video clips. If it's a movie the game already has questions for, it uses the game's names so the game finds the files, and also makes 3 Kid Frame Game pictures when there's one for that movie.
    They go in `tools/picks/<movie name>/`, with the time in each name, like `elf_2 (0-52-13).png`.
-3. Open each folder, look and listen, and **delete the ones you don't want** so one of each is left. If none are good, delete all three and drop the movie again for 3 new ones.
-4. Double-click **`Finish picks.bat`** (Mac: `Finish picks.command`). It renames each one you kept to the name the game expects (like `elf.png`) and moves it into `assets/media`. Anything with more than one choice left is left alone, so you can finish a few movies at a time.
+3. Open each folder, look and listen, and **delete any you don't like**. Keep as many as you want (up to all 3): the game picks one of them at random each time that question comes up, so it's different next time. If none are good, delete all three and drop the movie again for 3 new ones.
+4. Double-click **`Finish picks.bat`** (Mac: `Finish picks.command`). It renames the ones you kept to the names the game looks for, like `elf_1.png`, `elf_2.png` and `elf_3.png` (the time comes off the name), and moves them into `assets/media`.
+
+**Already have files named with the time, like `elf_2 (0-52-13).png`?** The game can't read those names. Run `python drop_movie.py --tidy "C:\path\to\that\folder"` and it renames them all in place (subfolders too), ready to upload.
 
 A window stays open while it works; a movie takes about a minute. Press **Ctrl+C** to stop it.
 
@@ -36,7 +38,7 @@ Get 3 choices for all of those at once. Open PowerShell in the `tools` folder an
 python drop_movie.py --csv media-list.csv
 ```
 
-It does every row that has a `movie_file` path, into the same `picks` folders, so you pick and run **Finish picks** the same way. Movies already in `picks` are skipped, so if you stop it with Ctrl+C you can run it again and it carries on. Add `--movie elf` to do just one movie.
+It does every row that has a `movie_file` path, into the same `picks` folders, so you delete the ones you don't like and run **Finish picks** the same way. Movies already in `picks` are skipped, so if you stop it with Ctrl+C you can run it again and it carries on. Add `--movie elf` to do just one movie.
 
 The rest of this page is the older way, which makes one file of each kind for every movie in the list at once.
 

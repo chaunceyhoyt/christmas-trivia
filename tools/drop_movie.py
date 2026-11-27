@@ -11,8 +11,9 @@ In tools/picks/<Movie>/ it makes 3 pictures, 3 sound clips and 3 video clips (pl
 game has one for that movie),
   each from a different part of the movie. The time is in each file name, like  elf_2 (0-52-13).png
 
-Then delete the ones you don't want, so one of each is left, and run "Finish picks" (or: drop_movie.py --finish).
-It renames each one you kept to the name the game expects and moves it into assets/media.
+Then delete any you don't like and run "Finish picks" (or: drop_movie.py --finish). It renames the ones you kept to
+elf_1.png, elf_2.png, elf_3.png and moves them into assets/media. The game uses one at random each time.
+Already have files named like elf_2 (0-52-13).png somewhere? drop_movie.py --tidy "that folder" renames them in place.
 """
 import argparse
 import csv
@@ -33,7 +34,7 @@ CHOICES = 3
 KINDS = [("frame_png", "picture", None), ("kid_frame_png", "kid picture", None),
          ("sound_mp3", "sound", "sound_seconds"), ("clip_mp4", "clip", "clip_seconds")]
 LENGTH = {"sound_seconds": 6.0, "clip_seconds": 8.0}
-# A picked file looks like  elf_2 (0-52-13).png ; finishing turns it back into  elf.png
+# A picked file looks like  elf_2 (0-52-13).png ; finishing turns it into  elf_2.png
 PICK_NAME = re.compile(r"^(?P<base>.+)_(?P<n>\d+)(?: \([0-9-]+\))?(?P<ext>\.[A-Za-z0-9]+)$")
 
 
@@ -154,39 +155,36 @@ def from_csv(csv_path, only=None):
         print("\nCouldn't find these files (check the path in movie_file):")
         for r, p in missing:
             print(f"  {r['movie']}: {p}")
-    print(f"\nDone. Open the picks folder ({PICKS}), keep your favorite of each and delete the others.")
+    print(f"\nDone. Open the picks folder ({PICKS}) and delete any you don't like. The game uses the rest at random.")
     print('Then run "Finish picks" to move the ones you kept into the game.')
 
 
-def finish(out_dir):
-    if not os.path.isdir(PICKS):
-        print("Nothing to finish: there's no picks folder yet. Drop some movies first.")
+def game_name(fn):
+    """elf_2 (0-52-13).png -> elf_2.png, the name the game looks for. None if it isn't a pick."""
+    m = PICK_NAME.match(fn)
+    return f"{m['base']}_{m['n']}{m['ext'].lower()}" if m else None
+
+
+def finish(out_dir, src=PICKS):
+    """Move every choice still in the picks folders into the game, named elf_1.png, elf_2.png, elf_3.png.
+    The game picks one of them at random each time the question comes up."""
+    if not os.path.isdir(src):
+        print(f"Nothing to finish: can't find {src}. Drop some movies first.")
         return
     os.makedirs(out_dir, exist_ok=True)
-    moved, waiting = 0, []
-    for movie in sorted(os.listdir(PICKS)):
-        folder = os.path.join(PICKS, movie)
-        if not os.path.isdir(folder):
-            continue
-        groups = {}
-        for fn in os.listdir(folder):
-            m = PICK_NAME.match(fn)
-            if m:
-                groups.setdefault(m["base"] + m["ext"].lower(), []).append(fn)
-        for final, files in sorted(groups.items()):
-            if len(files) > 1:
-                waiting.append(f"{movie}: {len(files)} left for {final}")
+    moved = 0
+    for root, _, files in sorted(os.walk(src)):
+        for fn in sorted(files):
+            final = game_name(fn)
+            if not final or (root == out_dir and fn == final):
                 continue
-            shutil.move(os.path.join(folder, files[0]), os.path.join(out_dir, final))
-            print(f"  {movie}: kept {files[0]}  ->  {final}")
+            shutil.move(os.path.join(root, fn), os.path.join(out_dir, final))
+            print(f"  {fn}  ->  {final}")
             moved += 1
-        if not os.listdir(folder):
-            os.rmdir(folder)
+    for root, dirs, files in os.walk(src, topdown=False):
+        if root != src and root != out_dir and not os.listdir(root):
+            os.rmdir(root)
     print(f"\nMoved {moved} file{'s' if moved != 1 else ''} into {out_dir}")
-    if waiting:
-        print("\nStill more than one choice here, so these were left alone. Delete the ones you don't want and finish again:")
-        for w in waiting:
-            print("  " + w)
 
 
 def ask_for_paths():
@@ -207,8 +205,13 @@ def main():
     ap.add_argument("--finish", action="store_true", help="move the choices you kept into assets/media with their game names")
     ap.add_argument("--csv", metavar="FILE", help="make choices for every row of this list that has a movie_file path, like --csv media-list.csv")
     ap.add_argument("--movie", help="with --csv: only rows whose movie name contains this text, like --movie elf")
+    ap.add_argument("--tidy", metavar="FOLDER", help="rename files like elf_2 (0-52-13).png in this folder (and its subfolders) to elf_2.png, in place")
     ap.add_argument("--out", default=DEFAULT_OUT, help=f"where finished files go (default: {DEFAULT_OUT})")
     args = ap.parse_args()
+    if args.tidy:
+        folder = os.path.abspath(args.tidy.strip('"'))
+        finish(folder, folder)
+        return
     if args.finish:
         finish(args.out)
         return
@@ -225,7 +228,7 @@ def main():
             do_movie(p, rows)
         except Exception as e:
             print(f"\nSomething went wrong with {p}: {e}")
-    print(f"\nDone. Open the picks folder ({PICKS}), keep your favorite of each and delete the others.")
+    print(f"\nDone. Open the picks folder ({PICKS}) and delete any you don't like. The game uses the rest at random.")
     print('Then run "Finish picks" to move the ones you kept into the game.')
 
 

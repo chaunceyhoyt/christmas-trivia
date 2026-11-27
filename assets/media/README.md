@@ -2,6 +2,8 @@
 
 Put pictures, sound clips and video clips here with the **exact** file names listed below. A question whose file is missing is skipped. A round with no files at all is greyed out on the host controller. Reload the big screen after adding files.
 
+**Up to 3 versions of each file:** add `_1`, `_2` or `_3` before the extension, like `elf_1.png`, `elf_2.png`, `elf_3.png` (or `clip-elf_1.mp4`). Each time the question comes up, the game plays one of them at random. Any one, two or all three can be there; the plain name (`elf.png`) works too when there's just one.
+
 These are for your own party at home. Use clips you have the right to use (for example, ones you recorded yourself from movies you own).
 
 ## The Frame Game (pictures, PNG)
