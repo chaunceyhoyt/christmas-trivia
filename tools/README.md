@@ -28,6 +28,16 @@ Check it worked: `ffmpeg -version` and `python --version` (on a Mac, `python3 --
 
 A window stays open while it works; a movie takes about a minute. Press **Ctrl+C** to stop it.
 
+### Already filled in `movie_file` paths in the list?
+
+Get 3 choices for all of those at once. Open PowerShell in the `tools` folder and run:
+
+```
+python drop_movie.py --csv media-list.csv
+```
+
+It does every row that has a `movie_file` path, into the same `picks` folders, so you pick and run **Finish picks** the same way. Movies already in `picks` are skipped, so if you stop it with Ctrl+C you can run it again and it carries on. Add `--movie elf` to do just one movie.
+
 The rest of this page is the older way, which makes one file of each kind for every movie in the list at once.
 
 ## Where your movies are

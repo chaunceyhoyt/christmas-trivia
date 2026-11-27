@@ -84,7 +84,7 @@ def bright_frame(movie, lo, hi, out, tries=5):
     return best[0]
 
 
-def do_movie(path, rows):
+def do_movie(path, rows, row=None):
     path = path.strip().strip('"').strip("'")
     if not os.path.isfile(path):
         print(f"\nCan't find {path}")
@@ -92,7 +92,7 @@ def do_movie(path, rows):
     if os.path.splitext(path)[1].lower() not in VIDEO_EXT:
         print(f"\nSkipping {os.path.basename(path)}: not a video file")
         return
-    row = which_movie(path, rows)
+    row = row or which_movie(path, rows)
     total = duration(path)
     folder = os.path.join(PICKS, re.sub(r'[<>:"/\\|?*]', "", row["movie"]).strip())
     os.makedirs(folder, exist_ok=True)
@@ -122,6 +122,40 @@ def do_movie(path, rows):
             except Exception as e:  # keep going with the rest
                 print(f"  {kind} {n} of {CHOICES}: couldn't make it ({e})")
     print(f"  Saved in {folder}")
+
+
+def from_csv(csv_path, only=None):
+    """Make 3 choices of each file for every row with a movie_file. Rows already in the picks folder are skipped,
+    so you can stop it with Ctrl+C and run it again."""
+    with open(csv_path, newline="", encoding="utf-8-sig") as f:
+        rows = [r for r in csv.DictReader(f) if (r.get("movie") or "").strip()]
+    base = os.path.dirname(os.path.abspath(csv_path))
+    todo, missing = [], []
+    for r in rows:
+        if only and only.lower() not in r["movie"].lower():
+            continue
+        p = (r.get("movie_file") or "").strip().strip('"').strip("'")
+        if not p:
+            continue
+        if not os.path.isabs(p):
+            p = os.path.join(base, p)
+        (todo if os.path.isfile(p) else missing).append((r, p))
+    print(f"{len(todo)} movie{'s' if len(todo) != 1 else ''} to do.")
+    for r, p in todo:
+        folder = os.path.join(PICKS, re.sub(r'[<>:"/\\|?*]', "", r["movie"]).strip())
+        if os.path.isdir(folder) and os.listdir(folder):
+            print(f"\n{r['movie']}: already in the picks folder, skipping (delete its folder there to redo it)")
+            continue
+        try:
+            do_movie(p, rows, r)
+        except Exception as e:
+            print(f"\nSomething went wrong with {r['movie']}: {e}")
+    if missing:
+        print("\nCouldn't find these files (check the path in movie_file):")
+        for r, p in missing:
+            print(f"  {r['movie']}: {p}")
+    print(f"\nDone. Open the picks folder ({PICKS}), keep your favorite of each and delete the others.")
+    print('Then run "Finish picks" to move the ones you kept into the game.')
 
 
 def finish(out_dir):
@@ -171,6 +205,8 @@ def main():
     ap = argparse.ArgumentParser(description="Make 3 choices of every picture, sound and clip for each movie you drop.")
     ap.add_argument("movies", nargs="*", help="movie files")
     ap.add_argument("--finish", action="store_true", help="move the choices you kept into assets/media with their game names")
+    ap.add_argument("--csv", metavar="FILE", help="make choices for every row of this list that has a movie_file path, like --csv media-list.csv")
+    ap.add_argument("--movie", help="with --csv: only rows whose movie name contains this text, like --movie elf")
     ap.add_argument("--out", default=DEFAULT_OUT, help=f"where finished files go (default: {DEFAULT_OUT})")
     args = ap.parse_args()
     if args.finish:
@@ -178,6 +214,9 @@ def main():
         return
     need("ffmpeg"); need("ffprobe")
     rows = load_rows()
+    if args.csv:
+        from_csv(args.csv, args.movie)
+        return
     paths = args.movies or ask_for_paths()
     if not paths:
         return
