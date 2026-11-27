@@ -5,8 +5,10 @@ Drag-and-drop helper: makes 3 choices of every file for a movie, so you can keep
 Windows: drag one or more movie files onto "Drop movies here.bat".
 Mac: double-click "Drop movies here.command", then drag movies into the window and press Return.
 
-For each movie it works out which game movie it is (from media-list.csv), then makes, in tools/picks/<Movie>/:
-  3 Frame Game pictures, 3 Kid Frame Game pictures (if that movie has one), 3 sound clips and 3 video clips,
+Works for any movie: the names come from the file name (Elf (2003) 1080p.mkv -> elf.png, elf.mp3, clip-elf.mp4).
+If it's a movie the game already lists in media-list.csv, it uses the game's names instead, so the game finds them.
+In tools/picks/<Movie>/ it makes 3 pictures, 3 sound clips and 3 video clips (plus 3 Kid Frame Game pictures if the
+game has one for that movie),
   each from a different part of the movie. The time is in each file name, like  elf_2 (0-52-13).png
 
 Then delete the ones you don't want, so one of each is left, and run "Finish picks" (or: drop_movie.py --finish).
@@ -22,7 +24,7 @@ import shutil
 import sys
 
 from make_media import (DARK_LEVEL, DEFAULT_OUT, HERE, VIDEO_EXT, brightness, duration, fmt_time, grab_frame,
-                        make_clip, make_sound, match_score, need, parse_time)
+                        make_clip, make_sound, match_score, need, parse_time, words, JUNK)
 
 PICKS = os.path.join(HERE, "picks")
 CSV = os.path.join(HERE, "media-list.csv")
@@ -36,25 +38,31 @@ PICK_NAME = re.compile(r"^(?P<base>.+)_(?P<n>\d+)(?: \([0-9-]+\))?(?P<ext>\.[A-Z
 
 
 def load_rows():
+    if not os.path.exists(CSV):
+        return []
     with open(CSV, newline="", encoding="utf-8-sig") as f:
         return [r for r in csv.DictReader(f) if (r.get("movie") or "").strip()]
 
 
+def names_from_file(path):
+    """Game-style names from the file name: Elf (2003) 1080p.mkv -> elf.png, elf.mp3, clip-elf.mp4."""
+    ws = [w for w in words(os.path.splitext(os.path.basename(path))[0])
+          if w not in JUNK and not re.fullmatch(r"(19|20)\d\d", w)]
+    if not ws:
+        ws = ["movie"]
+    slug = "-".join(ws)
+    title = " ".join(w.capitalize() for w in ws)
+    return {"movie": title, "frame_png": slug + ".png", "sound_mp3": slug + ".mp3", "clip_mp4": "clip-" + slug + ".mp4"}
+
+
 def which_movie(path, rows):
-    """The media-list row this movie file belongs to. Asks if it can't tell."""
+    """Use the game's own names if this is a movie the game already knows (so it finds the files),
+    otherwise make names from the file name. Never asks."""
     scored = sorted((sc, i) for i, r in enumerate(rows) for sc in [match_score(r["movie"], path)] if sc is not None)
-    if scored and (len(scored) == 1 or scored[1][0] - scored[0][0] > 0.01):
+    # Only a near-exact title match counts (a year is fine, but Home Alone 3 is not Home Alone).
+    if scored and scored[0][0] <= 0.5 and (len(scored) == 1 or scored[1][0] - scored[0][0] > 0.01):
         return rows[scored[0][1]]
-    options = [rows[i] for _, i in scored] if scored else rows
-    print(f"\nWhich movie is {os.path.basename(path)}?")
-    for n, r in enumerate(options, 1):
-        print(f"  {n:>2}. {r['movie']}")
-    while True:
-        pick = input("Type its number and press Enter (or just Enter to skip it): ").strip()
-        if not pick:
-            return None
-        if pick.isdigit() and 1 <= int(pick) <= len(options):
-            return options[int(pick) - 1]
+    return names_from_file(path)
 
 
 def stamp(t):
@@ -85,8 +93,6 @@ def do_movie(path, rows):
         print(f"\nSkipping {os.path.basename(path)}: not a video file")
         return
     row = which_movie(path, rows)
-    if not row:
-        return
     total = duration(path)
     folder = os.path.join(PICKS, re.sub(r'[<>:"/\\|?*]', "", row["movie"]).strip())
     os.makedirs(folder, exist_ok=True)
