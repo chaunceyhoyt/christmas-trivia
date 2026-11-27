@@ -34,6 +34,8 @@ There are 395 questions in 28 rounds: 12 regular rounds, a 5-second speed round,
 
 Turn on **Surprise rounds** and a surprise round sneaks in between playlist rounds now and then. **Kid mode** gives everything at least 30 seconds, shows the kid rounds first, and the kid rounds have silly “Jingle Jiggle” breaks.
 
+Each round plays a random 10 of its questions (picture, sound and clip rounds play 12), easiest first. The game remembers what it has asked, even across new games, so replaying a round brings new questions until its set runs out.
+
 If the TV laptop reloads, the game picks up where it left off. **New game** at the bottom of the big screen starts over. Keyboard on the TV laptop: Space next, ← back, P pause, S scores, A surprise round, H host QR, M mute.
 
 ## Scoring
