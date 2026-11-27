@@ -17,6 +17,20 @@ You need **Python 3** and **ffmpeg** (a free video tool).
 
 Check it worked: `ffmpeg -version` and `python --version` (on a Mac, `python3 --version`) should both print a version.
 
+## Easiest: drag and drop, then pick your favorites
+
+1. **Windows:** drag one or more movie files onto **`Drop movies here.bat`** in this folder.
+   **Mac:** double-click **`Drop movies here.command`**, drag movies into the window that opens and press Return.
+2. It works out which game movie each file is (if it can't tell, it shows the list and asks you to type a number). Then it makes **3 choices of every file**, each from a different part of the movie:
+   3 Frame Game pictures, 3 Kid Frame Game pictures (for movies that have one), 3 sound clips and 3 video clips.
+   They go in `tools/picks/<movie name>/`, with the time in each name, like `elf_2 (0-52-13).png`.
+3. Open each folder, look and listen, and **delete the ones you don't want** so one of each is left. If none are good, delete all three and drop the movie again for 3 new ones.
+4. Double-click **`Finish picks.bat`** (Mac: `Finish picks.command`). It renames each one you kept to the name the game expects (like `elf.png`) and moves it into `assets/media`. Anything with more than one choice left is left alone, so you can finish a few movies at a time.
+
+A window stays open while it works; a movie takes about a minute. Press **Ctrl+C** to stop it.
+
+The rest of this page is the older way, which makes one file of each kind for every movie in the list at once.
+
 ## Where your movies are
 
 Leave them where they are. Point the script at the folder they're in (subfolders are searched too). If they're in several places, repeat `--movies`, like `--movies "D:\Movies" --movies "E:\Kids Movies"`. You can also put a movie's full path in its `movie_file` column, like `D:\Movies\Elf (2003).mkv`.
